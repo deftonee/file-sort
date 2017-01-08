@@ -1,42 +1,108 @@
 # coding: utf-8
 
+import datetime
 import logging
-from os import listdir, path, makedirs
+import re
+import os
 import shutil
 import sys
+
 import magic
-
-from datetime import datetime, date
-
-
 from PIL import Image
 
-path_format = '%Y/%m.%d'
+
+# %t or %T is a content type of file
+# %e or %E is a extension of file
 
 src_path = sys.argv[1]
 dst_path = sys.argv[2]
+path_format = sys.argv[3]
 
 # src_path = u'/Users/deftone/src'
 # dst_path = u'/Users/deftone/dst'
+# path_format = u'%T/%Y/%m-%B.%d'
+
+
+path_structure = []
+
+for part in path_format.split(u'/'):
+    path_structure.append((part, set(re.findall(ur'%[a-zA-Z]', part))))
+
+content_type_tags = (u'%t', u'%T')
+extension_tags = (u'%e', u'%E')
+datetime_tags = (u'%a', u'%A', u'%w', u'%d', u'%b', u'%B', u'%m', u'%y', u'%Y',
+                 u'%H', u'%I', u'%p', u'%M', u'%S', u'%f', u'%z', u'%Z', u'%j',
+                 u'%U', u'%W', u'%c', u'%x', u'%X', )
+
+
+class File(object):
+    path = None
+    content_type = None
+    extension = None
+    date = None
+    supported_tags = None
+
+    def __init__(self, _path, _type):
+        self.path = _path
+        self.content_type = _type
+        self.extension = os.path.splitext(_path)[1].strip('.')
+        self.date = self.get_date()
+        self.supported_tags = self.get_supported_tags()
+
+    def get_date(self):
+        if os.path.getmtime(self.path):
+            return datetime.datetime.fromtimestamp(os.path.getmtime(self.path))
+        elif os.path.getctime(self.path):
+            return datetime.datetime.fromtimestamp(os.path.getctime(self.path))
+
+    def get_supported_tags(self):
+        result = ()
+        if self.content_type:
+            result += content_type_tags
+        if self.extension:
+            result += extension_tags
+        if self.date:
+            result += datetime_tags
+        return set(result)
+
+
+class ImageFile(File):
+
+    def get_date(self):
+        try:
+            im = Image.open(self.path)
+            exif = im._getexif() or {}
+        except IOError:
+            return
+
+        if 0x9003 in exif:  # DateTimeDigitized
+            return datetime.datetime.strptime(exif.get(0x9003), '%Y:%m:%d %H:%M:%S')
+        elif 0x9004 in exif:  # DateTimeOriginal
+            return datetime.datetime.strptime(exif.get(0x9004), '%Y:%m:%d %H:%M:%S')
+        elif 0x0132 in exif:  # DateTime
+            return datetime.datetime.strptime(exif.get(0x0132), '%Y:%m:%d %H:%M:%S')
+        elif os.path.getmtime(self.path):
+            return datetime.datetime.fromtimestamp(os.path.getmtime(self.path))
 
 
 class ContentTypesEnum(object):
 
-    IMAGE = 'image'
-    VIDEO = 'video'
-    APPLICATION = 'application'
-    AUDIO = 'audio'
-    EXAMPLE = 'example'
-    MESSAGE = 'message'
-    MODEL = 'model'
-    MULTIPART = 'multipart'
-    TEXT = 'text'
+    IMAGE = u'image'
+    VIDEO = u'video'
+    APPLICATION = u'application'
+    AUDIO = u'audio'
+    EXAMPLE = u'example'
+    MESSAGE = u'message'
+    MODEL = u'model'
+    MULTIPART = u'multipart'
+    TEXT = u'text'
 
-    DEFAULT_FOLDER_NAME = 'Others'
+    DEFAULT_FOLDER_NAME = u'Others'
+    DEFAULT_CLASS = File
 
     folder_names = {
-        IMAGE: 'Images',
-        VIDEO: 'Videos',
+        IMAGE: u'Images',
+        VIDEO: u'Videos',
         APPLICATION: DEFAULT_FOLDER_NAME,
         AUDIO: DEFAULT_FOLDER_NAME,
         EXAMPLE: DEFAULT_FOLDER_NAME,
@@ -46,74 +112,75 @@ class ContentTypesEnum(object):
         TEXT: DEFAULT_FOLDER_NAME,
     }
 
+    class_names = {
+        IMAGE: ImageFile,
+        VIDEO: DEFAULT_CLASS,
+        APPLICATION: DEFAULT_CLASS,
+        AUDIO: DEFAULT_CLASS,
+        EXAMPLE: DEFAULT_CLASS,
+        MESSAGE: DEFAULT_CLASS,
+        MODEL: DEFAULT_CLASS,
+        MULTIPART: DEFAULT_CLASS,
+        TEXT: DEFAULT_CLASS,
+    }
+
 CTE = ContentTypesEnum
 
 
-def process_folder(folder_path, fn):
-    if not path.isdir(folder_path):
+def process_folder(folder_path):
+    if not os.path.isdir(folder_path):
         return
-    for file_name in listdir(folder_path):
-        current_path = path.join(folder_path, file_name)
-        if path.isfile(current_path):
-            fn(current_path)
-        elif path.isdir(current_path):
-            process_folder(current_path, fn)
-
-
-def get_date_from_exif(exif, key):
-    if key in exif:
-        return datetime.strptime(exif.get(key), '%Y:%m:%d %H:%M:%S')
-    else:
-        return None
-
-
-def process_image(file_path):
-    try:
-        im = Image.open(file_path)
-        exif = im._getexif() or {}
-    except IOError:
-        return
-
-    file_date = None
-    if 0x9003 in exif:  # DateTimeDigitized
-        file_date = datetime.strptime(exif.get(0x9003), '%Y:%m:%d %H:%M:%S')
-    elif 0x9004 in exif:  # DateTimeOriginal
-        file_date = datetime.strptime(exif.get(0x9004), '%Y:%m:%d %H:%M:%S')
-    elif 0x0132 in exif:  # DateTime
-        file_date = datetime.strptime(exif.get(0x0132), '%Y:%m:%d %H:%M:%S')
-    elif path.getmtime(file_path):
-        file_date = datetime.fromtimestamp(path.getmtime(file_path))
-    return file_date
-
-
-def get_dst_path_for_file(file_path):
-
-    params = [dst_path]
-
-    mime_info = magic.from_file(file_path, mime=True) or ''
-    file_type = mime_info.split('/')[0]
-
-    if file_type == CTE.IMAGE:
-        file_date = process_image(file_path)
-        params.append(CTE.folder_names.get(file_type, CTE.DEFAULT_FOLDER_NAME))
-        if isinstance(file_date, date):
-            params.extend([unicode(file_date.strftime(f)) for f in path_format.split(u'/')])
-    else:
-        params.append(CTE.folder_names.get(file_type, CTE.DEFAULT_FOLDER_NAME))
-
-    return path.join(*params)
+    for file_name in os.listdir(folder_path):
+        current_path = os.path.join(folder_path, file_name)
+        if os.path.isfile(current_path):
+            process_file(current_path)
+        elif os.path.isdir(current_path):
+            process_folder(current_path)
 
 
 def process_file(file_path):
 
-    new_file_path = get_dst_path_for_file(file_path)
+    mime_info = magic.from_file(file_path, mime=True) or u''
+    file_type = mime_info.split(u'/')[0]
 
-    if not path.isdir(new_file_path):
-        makedirs(new_file_path)
+    file_obj = CTE.class_names.get(
+        file_type, CTE.DEFAULT_CLASS
+    )(
+        file_path, file_type
+    )
+
+    new_path_parts = [dst_path]
+
+    for lvl, lvl_tags in path_structure:
+
+        if not lvl_tags.issubset(file_obj.supported_tags):
+            new_path_parts.append(CTE.DEFAULT_FOLDER_NAME)
+        else:
+            if lvl_tags.intersection(extension_tags):
+                lvl = lvl.replace(u'%e', u'%E').replace(
+                    u'%E',
+                    file_obj.extension
+                )
+
+            if lvl_tags.intersection(content_type_tags):
+                lvl = lvl.replace(u'%t', u'%T').replace(
+                    u'%T',
+                    CTE.folder_names.get(file_obj.content_type, CTE.DEFAULT_FOLDER_NAME)
+                )
+
+            if lvl_tags.intersection(datetime_tags):
+                lvl = file_obj.date.strftime(lvl)
+
+            new_path_parts.append(lvl)
+
+    new_file_path = os.path.join(*new_path_parts)
+
+    if not os.path.exists(new_file_path):
+        os.makedirs(new_file_path)
     shutil.copy2(file_path, new_file_path)
 
 
-process_folder(src_path, process_file)
+process_folder(src_path)
 
 
 # DateTime 0x0132
