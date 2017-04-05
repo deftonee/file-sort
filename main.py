@@ -1,6 +1,5 @@
 # coding: utf-8
 
-import locale
 import logging
 import magic
 import re
@@ -18,7 +17,10 @@ CONTENT_TYPE_TAGS = (u'%t', u'%T')
 EXTENSION_TAGS = (u'%e', u'%E')
 DATETIME_TAGS = (u'%a', u'%A', u'%w', u'%d', u'%b', u'%B', u'%m', u'%y', u'%Y',
                  u'%H', u'%I', u'%p', u'%M', u'%S', u'%f', u'%z', u'%Z', u'%j',
-                 u'%U', u'%W', u'%c', u'%x', u'%X',)
+                 u'%U', u'%W', u'%c', u'%x', u'%X', )
+ALL_TAGS = CONTENT_TYPE_TAGS + EXTENSION_TAGS + DATETIME_TAGS
+
+TAG_PATTERN = u'%[a-zA-Z]'
 PATH_DELIMITER = u'/'
 
 
@@ -50,7 +52,7 @@ class File(object):
             result += EXTENSION_TAGS
         if self.date:
             result += DATETIME_TAGS
-        return set(result)
+        return result
 
 
 class ImageFile(File):
@@ -131,7 +133,15 @@ def sort(src_path, dst_path, path_format):
         for name in os.listdir(folder_path):
             current_path = os.path.join(folder_path, name)
             if os.path.isfile(current_path):
-                process_file(current_path)
+                try:
+                    process_file(current_path)
+                except (OSError, ), e:
+                    logging.error(
+                        u'Error while processing of "%s":\n%s' % (
+                            current_path, e))
+                else:
+                    logging.info(
+                        u'Done processing of "%s"' % current_path)
             elif os.path.isdir(current_path):
                 process_folder(current_path)
 
@@ -162,7 +172,9 @@ def sort(src_path, dst_path, path_format):
                 if lvl_tags.intersection(CONTENT_TYPE_TAGS):
                     lvl = lvl.replace(u'%t', u'%T').replace(
                         u'%T',
-                        CTE.folder_names.get(file_obj.content_type, CTE.DEFAULT_FOLDER_NAME)
+                        CTE.folder_names.get(
+                            file_obj.content_type,
+                            CTE.DEFAULT_FOLDER_NAME)
                     )
 
                 if lvl_tags.intersection(DATETIME_TAGS):
@@ -177,19 +189,21 @@ def sort(src_path, dst_path, path_format):
         shutil.copy2(file_path, new_file_path)
 
     for part in path_format.split(PATH_DELIMITER):
-        path_structure.append((part, set(re.findall(ur'%[a-zA-Z]', part))))
+        path_structure.append((part, set(re.findall(TAG_PATTERN, part))))
 
     process_folder(src_path)
 
 
 def validate(src_path, dst_path, path_format):
     if not os.path.isdir(src_path):
-        return False, _(u'Enter correct source path')
+        return False, _(u'Source folder path is not valid')
     if not os.path.isdir(dst_path):
-        return False, _(u'Enter correct destination path')
+        return False, _(u'Destination folder path is not valid')
 
-    # TODO дописать валидацию
-    if not path_format:
-        return False, _(u'Enter correct path format')
+    if (
+            not path_format
+            or not set(re.findall(TAG_PATTERN, path_format)).issubset(ALL_TAGS)
+    ):
+        return False, _(u'Path format is not valid')
 
     return True, u''
