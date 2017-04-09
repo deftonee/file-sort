@@ -1,26 +1,57 @@
-# coding: utf-8
 
 import locale
+import os
 
-# import tkFileDialog
 from gettext import gettext as _
-from Tkinter import *
-import tkFileDialog
-import tkMessageBox
-from ttk import *
-from main import sort, validate
+from tkinter import *
+from tkinter import filedialog
+from tkinter import messagebox
+from tkinter.ttk import Combobox, Progressbar
+
+from main import sort, validate, FORMAT_HELP
+
+from tooltip import CreateToolTip
 
 # locale_var = 'ru_RU'
 # locale.setlocale(locale.LC_TIME, locale_var)
 
+format_help_window = None
 
-def open_dialog(entry, title):
+
+def open_folder_dialog(entry, title):
     def _internal(event):
-        path = tkFileDialog.askdirectory(title=title)
+        path = filedialog.askdirectory(title=title)
 
         entry.delete(0, END)
         entry.insert(0, path)
     return _internal
+
+
+def show_format_help(event):
+
+    def _close_format_help():
+        global format_help_window
+        format_help_window.destroy()
+        del format_help_window
+        format_help_window = None
+
+    global format_help_window
+    if format_help_window is None:
+        format_help_window = Toplevel()
+        format_help_window.title(_('Format help'))
+        format_help_window.wm_geometry("")
+        format_help_window.wm_resizable(width=False, height=False)
+
+        msg = Message(
+            format_help_window,
+            text='\n'.join('%s - %s' % (x, y) for x, y in FORMAT_HELP.items()))
+        msg.pack()
+
+        button = Button(format_help_window,
+                        text=_('Understood'), command=_close_format_help)
+        button.pack()
+
+        format_help_window.protocol("WM_DELETE_WINDOW", _close_format_help)
 
 
 def sort_button_pressed(event):
@@ -30,61 +61,85 @@ def sort_button_pressed(event):
     fmt = fmt_fld.get()
     is_valid, msg = validate(src_path, dst_path, fmt)
     if not is_valid:
-        tkMessageBox.showerror(
-            title=_(u'Validation error'),
+        messagebox.showerror(
+            title=_('Validation error'),
             message=msg,
         )
     else:
+        total = 0
+        for x in os.walk(src_path):
+            total += len(x[2])
+        pgb["maximum"] = total
+        pgb["value"] = 0
+        # TODO доделать прогрессбар и лог
         sort(src_path, dst_path, fmt)
 
 
+def get_fmt_values():
+    return '%T/%Y/%m-%B.%d', '%E/%Y-%m-%d',
+
+
 root = Tk()
-root.title(_(u'File Sorter'))
-root.geometry(u'500x150')
+root.title(_('File Sorter'))
+root.wm_geometry("")
+root.wm_resizable(width=False, height=False)
 
-src_lbl = Label(root, text=_(u'Source folder'))
-src_fld = Entry(root)
-src_btn = Button(root, text=_(u'View'))
+LABEL_WIDTH = 25
+FIELD_WIDTH = 20
+BUTTON_WIDTH = 5
+
+src_lbl = Label(root, text=_('Source folder'),
+                width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+src_fld = Entry(root, width=FIELD_WIDTH)
+src_btn = Button(root, text=_('View'), width=BUTTON_WIDTH)
 
 
-dst_lbl = Label(root, text=_(u'Destination folder'))
-dst_fld = Entry(root)
-dst_btn = Button(root, text=_(u'View'))
+dst_lbl = Label(root, text=_('Destination folder'),
+                width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+dst_fld = Entry(root, width=FIELD_WIDTH)
+dst_btn = Button(root, text=_('View'), width=BUTTON_WIDTH)
 
+fmt_lbl = Label(root, text=_('Destination folder structure format'),
+                width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+fmt_fld = Combobox(root, values=get_fmt_values(),
+                   width=FIELD_WIDTH, style='TEntry')
+fmt_bln = CreateToolTip(fmt_fld,
+                        text=_('Press down button to see some variants'))
+fmt_btn = Button(root, text=_('?'), width=BUTTON_WIDTH)
 
-fmt_lbl = Label(root, text=_(u'Destination folder structure format'))
-fmt_fld = Combobox(
-    root,
-    # TODO выводить сохранённые старые варики
-    values=('3dfgdfsgdsg', 'fdsddsga', 'dsgads')
-)
-fmt_btn = Button(root, text=_(u'?'))
+pgb = Progressbar(root, orient="horizontal", length=200, mode="determinate")
 
 # TODO поле выбора языка
 
-main_btn = Button(root, text=_(u'Make me a Sandwich'))
+main_btn = Button(root, text=_('Sort'))
 
 src_lbl.grid(row=0, column=0, columnspan=1)
-src_fld.grid(row=0, column=1, columnspan=2)
-src_btn.grid(row=0, column=3, columnspan=1)
+src_fld.grid(row=0, column=1, columnspan=1, sticky=W)
+src_btn.grid(row=0, column=2, columnspan=1)
 
 dst_lbl.grid(row=1, column=0, columnspan=1)
-dst_fld.grid(row=1, column=1, columnspan=2)
-dst_btn.grid(row=1, column=3, columnspan=1)
+dst_fld.grid(row=1, column=1, columnspan=1, sticky=W)
+dst_btn.grid(row=1, column=2, columnspan=1)
 
-fmt_lbl.grid(row=2, column=0, columnspan=2)
-fmt_fld.grid(row=2, column=2, columnspan=1)
-fmt_btn.grid(row=2, column=3, columnspan=1)
+fmt_lbl.grid(row=2, column=0, columnspan=1)
+fmt_fld.grid(row=2, column=1, columnspan=1, sticky=W)
+fmt_btn.grid(row=2, column=2, columnspan=1)
 
-main_btn.grid(row=3, column=0, columnspan=1)
+main_btn.grid(row=3, column=1, columnspan=1)
+
+pgb.grid(row=4, column=1, columnspan=3)
 
 src_btn.bind(
     '<Button-1>',
-    open_dialog(src_fld, _(u'Select source folder of your files'))
+    open_folder_dialog(src_fld, _('Select source folder of your files'))
 )
 dst_btn.bind(
     '<Button-1>',
-    open_dialog(dst_fld, _(u'Select destination folder of your files'))
+    open_folder_dialog(dst_fld, _('Select destination folder of your files'))
+)
+fmt_btn.bind(
+    '<Button-1>',
+    show_format_help
 )
 main_btn.bind(
     '<Button-1>',

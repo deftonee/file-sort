@@ -1,6 +1,7 @@
-# coding: utf-8
 
 import logging
+from functools import wraps
+
 import magic
 import re
 import os
@@ -11,17 +12,32 @@ from gettext import gettext as _
 from PIL import Image
 
 
-# %t or %T is a content type of file
-# %e or %E is a extension of file
-CONTENT_TYPE_TAGS = (u'%t', u'%T')
-EXTENSION_TAGS = (u'%e', u'%E')
-DATETIME_TAGS = (u'%a', u'%A', u'%w', u'%d', u'%b', u'%B', u'%m', u'%y', u'%Y',
-                 u'%H', u'%I', u'%p', u'%M', u'%S', u'%f', u'%z', u'%Z', u'%j',
-                 u'%U', u'%W', u'%c', u'%x', u'%X', )
+CONTENT_TYPE_TAGS = ('%T', )
+EXTENSION_TAGS = ('%E', )
+DATETIME_TAGS = ('%Y', '%m', '%d', '%H', '%M', '%S', '%z',
+                 '%a', '%A', '%b', '%B', '%c', '%I', '%p')
 ALL_TAGS = CONTENT_TYPE_TAGS + EXTENSION_TAGS + DATETIME_TAGS
 
-TAG_PATTERN = u'%[a-zA-Z]'
-PATH_DELIMITER = u'/'
+TAG_PATTERN = '%[a-zA-Z]'
+PATH_DELIMITER = '/'
+FORMAT_HELP = {
+    '%T': _("Content type name of file (Images, Videos, ...)"),
+    '%E': _("Extension of file (jpg, png, doc, avi, ...)"),
+    '%Y': _("Year with century as a decimal number"),
+    '%m': _("Month as a decimal number [01,12]"),
+    '%d': _("Day of the month as a decimal number [01,31]"),
+    '%H': _("Hour (24-hour clock) as a decimal number [00,23]"),
+    '%M': _("Minute as a decimal number [00,59]"),
+    '%S': _("Second as a decimal number [00,61]"),
+    '%z': _("Time zone offset from UTC"),
+    '%a': _("Locale's abbreviated weekday name"),
+    '%A': _("Locale's full weekday name"),
+    '%b': _("Locale's abbreviated month name"),
+    '%B': _("Locale's full month name"),
+    '%c': _("Locale's appropriate date and time representation"),
+    '%I': _("Hour (12-hour clock) as a decimal number [01,12]"),
+    '%p': _("Locale's equivalent of either AM or PM"),
+}
 
 
 class File(object):
@@ -76,29 +92,29 @@ class ImageFile(File):
 
 class ContentTypesEnum(object):
 
-    IMAGE = u'image'
-    VIDEO = u'video'
-    APPLICATION = u'application'
-    AUDIO = u'audio'
-    EXAMPLE = u'example'
-    MESSAGE = u'message'
-    MODEL = u'model'
-    MULTIPART = u'multipart'
-    TEXT = u'text'
+    IMAGE = 'image'
+    VIDEO = 'video'
+    APPLICATION = 'application'
+    AUDIO = 'audio'
+    EXAMPLE = 'example'
+    MESSAGE = 'message'
+    MODEL = 'model'
+    MULTIPART = 'multipart'
+    TEXT = 'text'
 
-    DEFAULT_FOLDER_NAME = _(u'Others')
+    DEFAULT_FOLDER_NAME = _('Others')
     DEFAULT_CLASS = File
 
     folder_names = {
-        IMAGE: _(u'Images'),
-        VIDEO: _(u'Videos'),
+        IMAGE: _('Images'),
+        VIDEO: _('Videos'),
+        AUDIO: _('Audios'),
+        TEXT: _('Documents'),
         APPLICATION: DEFAULT_FOLDER_NAME,
-        AUDIO: DEFAULT_FOLDER_NAME,
         EXAMPLE: DEFAULT_FOLDER_NAME,
         MESSAGE: DEFAULT_FOLDER_NAME,
         MODEL: DEFAULT_FOLDER_NAME,
         MULTIPART: DEFAULT_FOLDER_NAME,
-        TEXT: DEFAULT_FOLDER_NAME,
     }
 
     classes = {
@@ -114,6 +130,22 @@ class ContentTypesEnum(object):
     }
 
 CTE = ContentTypesEnum
+
+
+def logged(fn):
+    @wraps(fn)
+    def _inner(name):
+        print(name)
+        logging.info(
+            u'Start processing of "%s"' % name)
+        try:
+            fn(name)
+        except (OSError, ) as e:
+            logging.error(e)
+        else:
+            logging.info('Done')
+            print('Done')
+    return _inner
 
 
 def sort(src_path, dst_path, path_format):
@@ -133,22 +165,15 @@ def sort(src_path, dst_path, path_format):
         for name in os.listdir(folder_path):
             current_path = os.path.join(folder_path, name)
             if os.path.isfile(current_path):
-                try:
-                    process_file(current_path)
-                except (OSError, ), e:
-                    logging.error(
-                        u'Error while processing of "%s":\n%s' % (
-                            current_path, e))
-                else:
-                    logging.info(
-                        u'Done processing of "%s"' % current_path)
+                process_file(current_path)
             elif os.path.isdir(current_path):
                 process_folder(current_path)
 
+    @logged
     def process_file(file_path):
         """ Process file """
-        mime_info = magic.from_file(file_path, mime=True) or u''
-        file_type = mime_info.split(u'/')[0]
+        mime_info = magic.from_file(file_path, mime=True) or ''
+        file_type = mime_info.split('/')[0]
 
         file_obj = CTE.classes.get(
             file_type, CTE.DEFAULT_CLASS
@@ -164,14 +189,14 @@ def sort(src_path, dst_path, path_format):
                 new_path_parts.append(CTE.DEFAULT_FOLDER_NAME)
             else:
                 if lvl_tags.intersection(EXTENSION_TAGS):
-                    lvl = lvl.replace(u'%e', u'%E').replace(
-                        u'%E',
+                    lvl = lvl.replace('%e', '%E').replace(
+                        '%E',
                         file_obj.extension
                     )
 
                 if lvl_tags.intersection(CONTENT_TYPE_TAGS):
-                    lvl = lvl.replace(u'%t', u'%T').replace(
-                        u'%T',
+                    lvl = lvl.replace('%t', '%T').replace(
+                        '%T',
                         CTE.folder_names.get(
                             file_obj.content_type,
                             CTE.DEFAULT_FOLDER_NAME)
@@ -180,7 +205,7 @@ def sort(src_path, dst_path, path_format):
                 if lvl_tags.intersection(DATETIME_TAGS):
                     lvl = file_obj.date.strftime(lvl)
 
-                new_path_parts.append(lvl.decode('UTF-8'))
+                new_path_parts.append(lvl)
 
         new_file_path = os.path.join(*new_path_parts)
 
@@ -196,14 +221,14 @@ def sort(src_path, dst_path, path_format):
 
 def validate(src_path, dst_path, path_format):
     if not os.path.isdir(src_path):
-        return False, _(u'Source folder path is not valid')
+        return False, _('Source folder path is not valid')
     if not os.path.isdir(dst_path):
-        return False, _(u'Destination folder path is not valid')
+        return False, _('Destination folder path is not valid')
 
     if (
             not path_format
             or not set(re.findall(TAG_PATTERN, path_format)).issubset(ALL_TAGS)
     ):
-        return False, _(u'Path format is not valid')
+        return False, _('Path format is not valid')
 
-    return True, u''
+    return True, ''
