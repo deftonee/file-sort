@@ -1,13 +1,13 @@
 
 import logging
-from functools import wraps
-
 import magic
-import re
 import os
+import re
 import shutil
 
+from collections import OrderedDict
 from datetime import datetime
+from functools import wraps
 from gettext import gettext as _
 from PIL import Image
 
@@ -20,27 +20,30 @@ ALL_TAGS = CONTENT_TYPE_TAGS + EXTENSION_TAGS + DATETIME_TAGS
 
 TAG_PATTERN = '%[a-zA-Z]'
 PATH_DELIMITER = '/'
-FORMAT_HELP = {
-    '%T': _("Content type name of file (Images, Videos, ...)"),
-    '%E': _("Extension of file (jpg, png, doc, avi, ...)"),
-    '%Y': _("Year with century as a decimal number"),
-    '%m': _("Month as a decimal number [01,12]"),
-    '%d': _("Day of the month as a decimal number [01,31]"),
-    '%H': _("Hour (24-hour clock) as a decimal number [00,23]"),
-    '%M': _("Minute as a decimal number [00,59]"),
-    '%S': _("Second as a decimal number [00,61]"),
-    '%z': _("Time zone offset from UTC"),
-    '%a': _("Locale's abbreviated weekday name"),
-    '%A': _("Locale's full weekday name"),
-    '%b': _("Locale's abbreviated month name"),
-    '%B': _("Locale's full month name"),
-    '%c': _("Locale's appropriate date and time representation"),
-    '%I': _("Hour (12-hour clock) as a decimal number [01,12]"),
-    '%p': _("Locale's equivalent of either AM or PM"),
-}
+FORMAT_HELP = _('''
+    %T - Content type name of file (Images, Videos, ...)
+    %E - Extension of file (jpg, png, doc, avi, ...)
+    %Y - Year with century as a decimal number
+    %m - Month as a decimal number [01,12]
+    %d - Day of the month as a decimal number [01,31]
+    %H - Hour (24-hour clock) as a decimal number [00,23]
+    %M - Minute as a decimal number [00,59]
+    %S - Second as a decimal number [00,61]
+    %z - Time zone offset from UTC
+    %a - Locale's abbreviated weekday name
+    %A - Locale's full weekday name
+    %b - Locale's abbreviated month name
+    %B - Locale's full month name
+    %c - Locale's appropriate date and time representation
+    %I - Hour (12-hour clock) as a decimal number [01,12]
+    %p - Locale's equivalent of either AM or PM
+''')
+
+logger = logging.getLogger('sort process')
+logger.setLevel(logging.INFO)
 
 
-class File(object):
+class File:
     path = None
     content_type = None
     extension = None
@@ -76,7 +79,7 @@ class ImageFile(File):
     def get_date(self):
         try:
             im = Image.open(self.path)
-            exif = im._getexif() or {}
+            exif = getattr(im, '_getexif', dict)() or {}
         except IOError:
             return
 
@@ -90,7 +93,7 @@ class ImageFile(File):
             return datetime.fromtimestamp(os.path.getmtime(self.path))
 
 
-class ContentTypesEnum(object):
+class ContentTypesEnum:
 
     IMAGE = 'image'
     VIDEO = 'video'
@@ -135,16 +138,16 @@ CTE = ContentTypesEnum
 def logged(fn):
     @wraps(fn)
     def _inner(name):
-        print(name)
-        logging.info(
-            u'Start processing of "%s"' % name)
+
+        logger.info(
+            'Start processing of "%s"' % name)
         try:
             fn(name)
         except (OSError, ) as e:
-            logging.error(e)
+            logger.error(e)
         else:
-            logging.info('Done')
-            print('Done')
+            logger.info('Done')
+
     return _inner
 
 

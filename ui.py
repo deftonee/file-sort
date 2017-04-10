@@ -44,7 +44,7 @@ def show_format_help(event):
 
         msg = Message(
             format_help_window,
-            text='\n'.join('%s - %s' % (x, y) for x, y in FORMAT_HELP.items()))
+            text=FORMAT_HELP)
         msg.pack()
 
         button = Button(format_help_window,
@@ -69,6 +69,9 @@ def sort_button_pressed(event):
         total = 0
         for x in os.walk(src_path):
             total += len(x[2])
+        pgb = Progressbar(root, orient="horizontal", length=total,
+                          mode="determinate")
+        pgb.grid(row=4, column=1, columnspan=3)
         pgb["maximum"] = total
         pgb["value"] = 0
         # TODO доделать прогрессбар и лог
@@ -84,7 +87,7 @@ root.title(_('File Sorter'))
 root.wm_geometry("")
 root.wm_resizable(width=False, height=False)
 
-LABEL_WIDTH = 25
+LABEL_WIDTH = 20
 FIELD_WIDTH = 20
 BUTTON_WIDTH = 5
 
@@ -99,15 +102,13 @@ dst_lbl = Label(root, text=_('Destination folder'),
 dst_fld = Entry(root, width=FIELD_WIDTH)
 dst_btn = Button(root, text=_('View'), width=BUTTON_WIDTH)
 
-fmt_lbl = Label(root, text=_('Destination folder structure format'),
+fmt_lbl = Label(root, text=_('Folder structure format'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
 fmt_fld = Combobox(root, values=get_fmt_values(),
                    width=FIELD_WIDTH, style='TEntry')
 fmt_bln = CreateToolTip(fmt_fld,
                         text=_('Press down button to see some variants'))
 fmt_btn = Button(root, text=_('?'), width=BUTTON_WIDTH)
-
-pgb = Progressbar(root, orient="horizontal", length=200, mode="determinate")
 
 # TODO поле выбора языка
 
@@ -127,7 +128,6 @@ fmt_btn.grid(row=2, column=2, columnspan=1)
 
 main_btn.grid(row=3, column=1, columnspan=1)
 
-pgb.grid(row=4, column=1, columnspan=3)
 
 src_btn.bind(
     '<Button-1>',
