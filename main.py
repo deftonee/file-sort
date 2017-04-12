@@ -168,9 +168,15 @@ def sort(src_path, dst_path, path_format):
         for name in os.listdir(folder_path):
             current_path = os.path.join(folder_path, name)
             if os.path.isfile(current_path):
-                process_file(current_path)
+                try:
+                    process_file(current_path)
+                except Exception as e:
+                    yield '{}..{}'.format(current_path, 'Failed')
+                else:
+                    yield '{}..{}'.format(current_path, 'Done')
             elif os.path.isdir(current_path):
-                process_folder(current_path)
+                for result in process_folder(current_path):
+                    yield result
 
     @logged
     def process_file(file_path):
@@ -219,7 +225,8 @@ def sort(src_path, dst_path, path_format):
     for part in path_format.split(PATH_DELIMITER):
         path_structure.append((part, set(re.findall(TAG_PATTERN, part))))
 
-    process_folder(src_path)
+    for result in process_folder(src_path):
+        yield result
 
 
 def validate(src_path, dst_path, path_format):

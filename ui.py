@@ -66,16 +66,33 @@ def sort_button_pressed(event):
             message=msg,
         )
     else:
+        result_window = Toplevel()
+        result_window.title(_('Sorting process'))
+        result_window.wm_geometry("")
+        result_window.wm_resizable(width=False, height=False)
+
         total = 0
         for x in os.walk(src_path):
             total += len(x[2])
-        pgb = Progressbar(root, orient="horizontal", length=total,
-                          mode="determinate")
-        pgb.grid(row=4, column=1, columnspan=3)
-        pgb["maximum"] = total
-        pgb["value"] = 0
-        # TODO доделать прогрессбар и лог
-        sort(src_path, dst_path, fmt)
+
+        result_pgb = Progressbar(
+            result_window, orient="horizontal", length=total, mode="determinate")
+        # result_msg = Message(result_window)
+        result_msg = Listbox(result_window)
+        result_scb = Scrollbar(result_window)
+
+        result_pgb.pack()
+        result_msg.pack()
+        result_scb.pack()
+
+        result_pgb.config(maximum=total)
+        result_pgb.config(value=0)
+        result_msg.config(yscrollcommand=result_scb.set)
+        result_scb.config(command=result_msg.yview)
+
+        for result in sort(src_path, dst_path, fmt):
+            result_pgb.step(1)
+            result_msg.insert(END, result)
 
 
 def get_fmt_values():
