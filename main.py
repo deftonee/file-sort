@@ -171,9 +171,9 @@ def sort(src_path, dst_path, path_format):
                 try:
                     process_file(current_path)
                 except Exception as e:
-                    yield '{}..{}'.format(current_path, 'Failed')
+                    yield False, current_path
                 else:
-                    yield '{}..{}'.format(current_path, 'Done')
+                    yield True, current_path
             elif os.path.isdir(current_path):
                 for result in process_folder(current_path):
                     yield result

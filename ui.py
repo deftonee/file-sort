@@ -1,12 +1,14 @@
 
 import locale
 import os
+import threading
 
 from gettext import gettext as _
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
-from tkinter.ttk import Combobox, Progressbar
+from tkinter.scrolledtext import ScrolledText
+from tkinter.ttk import Combobox, Notebook, Progressbar
 
 from main import sort, validate, FORMAT_HELP
 
@@ -15,7 +17,13 @@ from tooltip import CreateToolTip
 # locale_var = 'ru_RU'
 # locale.setlocale(locale.LC_TIME, locale_var)
 
+LABEL_WIDTH = 20
+FIELD_WIDTH = 20
+BUTTON_WIDTH = 5
+PROGRESSBAR_LENGTH = 200
+
 format_help_window = None
+result_window = None
 
 
 def open_folder_dialog(entry, title):
@@ -29,32 +37,67 @@ def open_folder_dialog(entry, title):
 
 def show_format_help(event):
 
-    def _close_format_help():
+    def _close_format_help_window():
         global format_help_window
         format_help_window.destroy()
         del format_help_window
         format_help_window = None
 
     global format_help_window
-    if format_help_window is None:
-        format_help_window = Toplevel()
-        format_help_window.title(_('Format help'))
-        format_help_window.wm_geometry("")
-        format_help_window.wm_resizable(width=False, height=False)
 
-        msg = Message(
-            format_help_window,
-            text=FORMAT_HELP)
-        msg.pack()
+    if format_help_window is not None:
+        return
 
-        button = Button(format_help_window,
-                        text=_('Understood'), command=_close_format_help)
-        button.pack()
+    format_help_window = Toplevel()
+    format_help_window.title(_('Format help'))
+    format_help_window.wm_geometry("")
+    format_help_window.wm_resizable(width=False, height=False)
 
-        format_help_window.protocol("WM_DELETE_WINDOW", _close_format_help)
+    msg = Message(
+        format_help_window,
+        text=FORMAT_HELP)
+    msg.pack()
+
+    button = Button(format_help_window,
+                    text=_('Understood'), command=_close_format_help_window)
+    button.pack()
+
+    format_help_window.protocol("WM_DELETE_WINDOW", _close_format_help_window)
 
 
 def sort_button_pressed(event):
+
+    def _close_result_window():
+        global result_window
+        result_window.destroy()
+        del result_window
+        result_window = None
+
+    def _sorting_thread_body():
+        for is_done, file_name in sort(src_path, dst_path, fmt):
+            if result_window is None:
+                messagebox.showinfo(
+                    title=_('Information'),
+                    message=_('The sorting process is interrupted'),
+                )
+                return
+
+            result_pgb.step(1)
+            if is_done:
+                done_lst.insert(END, '%s\n' % file_name)
+            else:
+                failed_lst.insert(END, '%s\n' % file_name)
+
+        result_pgb.config(value=total)
+        messagebox.showinfo(
+            title=_('Success'),
+            message=_('Sort process completed'),
+        )
+
+    global result_window
+
+    if result_window is not None:
+        return
 
     src_path = src_fld.get()
     dst_path = dst_fld.get()
@@ -66,33 +109,38 @@ def sort_button_pressed(event):
             message=msg,
         )
     else:
-        result_window = Toplevel()
-        result_window.title(_('Sorting process'))
-        result_window.wm_geometry("")
-        result_window.wm_resizable(width=False, height=False)
 
         total = 0
         for x in os.walk(src_path):
             total += len(x[2])
 
-        result_pgb = Progressbar(
-            result_window, orient="horizontal", length=total, mode="determinate")
-        # result_msg = Message(result_window)
-        result_msg = Listbox(result_window)
-        result_scb = Scrollbar(result_window)
+        result_window = Toplevel()
+        result_window.title(_('Sorting process'))
+        result_window.wm_geometry("")
+        result_window.protocol("WM_DELETE_WINDOW", _close_result_window)
 
-        result_pgb.pack()
-        result_msg.pack()
-        result_scb.pack()
+        result_pgb = Progressbar(
+            result_window, orient="horizontal",
+            length=PROGRESSBAR_LENGTH, mode="determinate")
+
+        tabs = Notebook(result_window)
+        done_frame = Frame(tabs)
+        fails_frame = Frame(tabs)
+        tabs.add(done_frame, text=_('Done'))
+        tabs.add(fails_frame, text=_('Fails'))
+        done_lst = ScrolledText(done_frame)
+        failed_lst = ScrolledText(fails_frame)
+
+        result_pgb.pack(fill=X)
+        tabs.pack(fill=BOTH)
+        done_lst.pack(fill=BOTH)
+        failed_lst.pack(fill=BOTH)
 
         result_pgb.config(maximum=total)
         result_pgb.config(value=0)
-        result_msg.config(yscrollcommand=result_scb.set)
-        result_scb.config(command=result_msg.yview)
 
-        for result in sort(src_path, dst_path, fmt):
-            result_pgb.step(1)
-            result_msg.insert(END, result)
+        sorting_thread = threading.Thread(target=_sorting_thread_body)
+        sorting_thread.start()
 
 
 def get_fmt_values():
@@ -104,9 +152,6 @@ root.title(_('File Sorter'))
 root.wm_geometry("")
 root.wm_resizable(width=False, height=False)
 
-LABEL_WIDTH = 20
-FIELD_WIDTH = 20
-BUTTON_WIDTH = 5
 
 src_lbl = Label(root, text=_('Source folder'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
