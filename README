@@ -1,3 +1,10 @@
+File (mostly picture) sorting application/script
+
+
+
+Icon made by Creaticca Creative Agency from www.flaticon.com is licensed by CC 3.0 BY
+
+
 Deployment on Linux:
 sudo apt-get install python3
 sudo apt-get install python3-tk
@@ -8,3 +15,9 @@ pip install -r REQUIREMENTS
 
 
 Deployment on macOS:
+
+
+Assembling for macOS:
+
+rm -rf build dist
+python3 setup.py py2app

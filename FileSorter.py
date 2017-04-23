@@ -1,5 +1,6 @@
 
 import locale
+import json
 import os
 import threading
 
@@ -12,8 +13,6 @@ from tkinter.ttk import Combobox, Notebook, Progressbar
 
 from main import sort, validate, FORMAT_HELP
 
-from tooltip import CreateToolTip
-
 # locale_var = 'ru_RU'
 # locale.setlocale(locale.LC_TIME, locale_var)
 
@@ -21,9 +20,21 @@ LABEL_WIDTH = 20
 FIELD_WIDTH = 20
 BUTTON_WIDTH = 5
 PROGRESSBAR_LENGTH = 200
+SETTINGS_FILENAME = 'settings.json'
+SRC_SETTINGS_KEY = 'src'
+DST_SETTINGS_KEY = 'dst'
+FMT_SETTINGS_KEY = 'fmt'
 
 format_help_window = None
 result_window = None
+
+settings_path = os.path.join(os.path.dirname(__file__), SETTINGS_FILENAME)
+try:
+    settings_file = open(settings_path, 'r')
+    settings = json.load(settings_file)
+    settings_file.close()
+except FileNotFoundError:
+    settings = {}
 
 
 def open_folder_dialog(entry, title):
@@ -52,6 +63,7 @@ def show_format_help(event):
     format_help_window.title(_('Format help'))
     format_help_window.wm_geometry("")
     format_help_window.wm_resizable(width=False, height=False)
+    format_help_window.protocol("WM_DELETE_WINDOW", _close_format_help_window)
 
     msg = Message(
         format_help_window,
@@ -61,8 +73,6 @@ def show_format_help(event):
     button = Button(format_help_window,
                     text=_('Understood'), command=_close_format_help_window)
     button.pack()
-
-    format_help_window.protocol("WM_DELETE_WINDOW", _close_format_help_window)
 
 
 def sort_button_pressed(event):
@@ -75,18 +85,19 @@ def sort_button_pressed(event):
 
     def _sorting_thread_body():
         for is_done, file_name in sort(src_path, dst_path, fmt):
-            if result_window is None:
+
+            try:
+                result_pgb.step(1)
+                if is_done:
+                    done_lst.insert(END, '%s\n' % file_name)
+                else:
+                    failed_lst.insert(END, '%s\n' % file_name)
+            except TclError:
                 messagebox.showinfo(
                     title=_('Information'),
                     message=_('The sorting process is interrupted'),
                 )
                 return
-
-            result_pgb.step(1)
-            if is_done:
-                done_lst.insert(END, '%s\n' % file_name)
-            else:
-                failed_lst.insert(END, '%s\n' % file_name)
 
         result_pgb.config(value=total)
         messagebox.showinfo(
@@ -122,6 +133,8 @@ def sort_button_pressed(event):
         result_pgb = Progressbar(
             result_window, orient="horizontal",
             length=PROGRESSBAR_LENGTH, mode="determinate")
+        result_pgb.config(maximum=total)
+        result_pgb.config(value=0)
 
         tabs = Notebook(result_window)
         done_frame = Frame(tabs)
@@ -136,59 +149,78 @@ def sort_button_pressed(event):
         done_lst.pack(fill=BOTH)
         failed_lst.pack(fill=BOTH)
 
-        result_pgb.config(maximum=total)
-        result_pgb.config(value=0)
-
+        # start sorting
         sorting_thread = threading.Thread(target=_sorting_thread_body)
         sorting_thread.start()
 
+        # update settings
+        if src_path not in settings[SRC_SETTINGS_KEY]:
+            settings[SRC_SETTINGS_KEY].append(src_path)
 
-def get_fmt_values():
-    return '%T/%Y/%m-%B.%d', '%E/%Y-%m-%d',
+        if dst_path not in settings[DST_SETTINGS_KEY]:
+            settings[DST_SETTINGS_KEY].append(dst_path)
+
+        if fmt not in settings[FMT_SETTINGS_KEY]:
+            settings[FMT_SETTINGS_KEY].append(fmt)
 
 
-root = Tk()
-root.title(_('File Sorter'))
-root.wm_geometry("")
-root.wm_resizable(width=False, height=False)
+def get_src_choices():
+    return settings.setdefault(SRC_SETTINGS_KEY, [])
 
 
-src_lbl = Label(root, text=_('Source folder'),
+def get_dst_choices():
+    return settings.setdefault(DST_SETTINGS_KEY, [])
+
+
+def get_fmt_choices():
+    return settings.setdefault(FMT_SETTINGS_KEY, [])
+
+
+def close_main_window():
+    settings_file = open(settings_path, 'w')
+    json.dump(settings, settings_file)
+    settings_file.close()
+
+
+main_window = Tk()
+main_window.title(_('File Sorter'))
+main_window.wm_geometry("")
+main_window.wm_resizable(width=False, height=False)
+main_window.protocol("WM_DELETE_WINDOW", close_main_window)
+
+
+src_lbl = Label(main_window, text=_('Source folder'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-src_fld = Entry(root, width=FIELD_WIDTH)
-src_btn = Button(root, text=_('View'), width=BUTTON_WIDTH)
+src_fld = Combobox(main_window, values=get_src_choices(), width=FIELD_WIDTH)
+src_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
 
-
-dst_lbl = Label(root, text=_('Destination folder'),
+dst_lbl = Label(main_window, text=_('Destination folder'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-dst_fld = Entry(root, width=FIELD_WIDTH)
-dst_btn = Button(root, text=_('View'), width=BUTTON_WIDTH)
+dst_fld = Combobox(main_window, values=get_dst_choices(), width=FIELD_WIDTH)
+dst_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
 
-fmt_lbl = Label(root, text=_('Folder structure format'),
+fmt_lbl = Label(main_window, text=_('Folder structure format'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-fmt_fld = Combobox(root, values=get_fmt_values(),
-                   width=FIELD_WIDTH, style='TEntry')
-fmt_bln = CreateToolTip(fmt_fld,
-                        text=_('Press down button to see some variants'))
-fmt_btn = Button(root, text=_('?'), width=BUTTON_WIDTH)
+fmt_fld = Combobox(main_window, values=get_fmt_choices(), width=FIELD_WIDTH)
+fmt_btn = Button(main_window, text=_('?'), width=BUTTON_WIDTH)
 
 # TODO поле выбора языка
 
-main_btn = Button(root, text=_('Sort'))
+main_btn = Button(main_window, text=_('Sort'))
 
-src_lbl.grid(row=0, column=0, columnspan=1)
-src_fld.grid(row=0, column=1, columnspan=1, sticky=W)
-src_btn.grid(row=0, column=2, columnspan=1)
+src_lbl.grid(row=0, column=0)
+src_fld.grid(row=0, column=1, sticky=W)
+src_btn.grid(row=0, column=2)
 
-dst_lbl.grid(row=1, column=0, columnspan=1)
-dst_fld.grid(row=1, column=1, columnspan=1, sticky=W)
-dst_btn.grid(row=1, column=2, columnspan=1)
+dst_lbl.grid(row=1, column=0)
+dst_fld.grid(row=1, column=1, sticky=W)
+dst_btn.grid(row=1, column=2)
 
-fmt_lbl.grid(row=2, column=0, columnspan=1)
-fmt_fld.grid(row=2, column=1, columnspan=1, sticky=W)
-fmt_btn.grid(row=2, column=2, columnspan=1)
+fmt_lbl.grid(row=2, column=0)
+fmt_fld.grid(row=2, column=1, sticky=W)
+fmt_btn.grid(row=2, column=2)
 
-main_btn.grid(row=3, column=1, columnspan=1)
+main_btn.grid(row=3, column=1)
 
 
 src_btn.bind(
