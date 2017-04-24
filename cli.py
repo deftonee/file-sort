@@ -3,7 +3,7 @@ import os
 import sys
 
 from gettext import gettext as _
-from main import validate, sort
+from main import validate, sort, SortMethodEnum
 
 
 PGB_WIDTH = 40
@@ -25,7 +25,8 @@ try:
     dst_path = sys.argv[2]
     path_format = sys.argv[3]
 
-    is_valid, msg = validate(src_path, dst_path, path_format)
+    is_valid, msg = validate(src_path, dst_path, path_format,
+                             SortMethodEnum.values[SortMethodEnum.COPY])
     if is_valid:
 
         total = 0
@@ -35,7 +36,10 @@ try:
 
         i = 0
 
-        for is_done, file_name in sort(src_path, dst_path, path_format):
+        for is_done, file_name in sort(
+                src_path, dst_path, path_format,
+                SortMethodEnum.values[SortMethodEnum.COPY]
+        ):
             i += delta
 
             # erase last line

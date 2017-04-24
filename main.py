@@ -93,6 +93,16 @@ class ImageFile(File):
             return datetime.fromtimestamp(os.path.getmtime(self.path))
 
 
+class SortMethodEnum:
+    COPY = 1
+    MOVE = 2
+
+    values = {
+        COPY: _('Copy'),
+        MOVE: _('Move'),
+    }
+
+
 class ContentTypesEnum:
 
     IMAGE = 'image'
@@ -151,7 +161,7 @@ def logged(fn):
     return _inner
 
 
-def sort(src_path, dst_path, path_format):
+def sort(src_path, dst_path, path_format, method):
     """
     Sort files from src_path and place them in dst_path according to path_format
     :param src_path:
@@ -220,7 +230,10 @@ def sort(src_path, dst_path, path_format):
 
         if not os.path.exists(new_file_path):
             os.makedirs(new_file_path)
-        shutil.copy2(file_path, new_file_path)
+        if method == SortMethodEnum.values[SortMethodEnum.COPY]:
+            shutil.copy2(file_path, new_file_path)
+        elif method == SortMethodEnum.values[SortMethodEnum.MOVE]:
+            shutil.move(file_path, new_file_path, shutil.copy2)
 
     for part in path_format.split(PATH_DELIMITER):
         path_structure.append((part, set(re.findall(TAG_PATTERN, part))))
@@ -229,7 +242,7 @@ def sort(src_path, dst_path, path_format):
         yield result
 
 
-def validate(src_path, dst_path, path_format):
+def validate(src_path, dst_path, path_format, method):
     if not os.path.isdir(src_path):
         return False, _('Source folder path is not valid')
     if not os.path.isdir(dst_path):
@@ -240,5 +253,8 @@ def validate(src_path, dst_path, path_format):
             or not set(re.findall(TAG_PATTERN, path_format)).issubset(ALL_TAGS)
     ):
         return False, _('Path format is not valid')
+
+    if method not in SortMethodEnum.values.values():
+        return False, _('Sorting method is not valid')
 
     return True, ''

@@ -8,8 +8,8 @@ Usage:
 from setuptools import setup
 
 APP = ['FileSorter.py']
-DATA_FILES = ['pic.icns']
-OPTIONS = {'iconfile': '/Users/deftone/sources/PycharmProjects/file_sort/pic.icns'}
+DATA_FILES = []
+OPTIONS = {'iconfile': '/home/adam/projects/file-sort/pic.icns'}
 
 setup(
     app=APP,

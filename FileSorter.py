@@ -11,7 +11,7 @@ from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
-from main import sort, validate, FORMAT_HELP
+from main import sort, validate, FORMAT_HELP, SortMethodEnum
 
 # locale_var = 'ru_RU'
 # locale.setlocale(locale.LC_TIME, locale_var)
@@ -28,6 +28,7 @@ FMT_SETTINGS_KEY = 'fmt'
 format_help_window = None
 result_window = None
 
+# load settings, savings
 settings_path = os.path.join(os.path.dirname(__file__), SETTINGS_FILENAME)
 try:
     settings_file = open(settings_path, 'r')
@@ -35,6 +36,12 @@ try:
     settings_file.close()
 except FileNotFoundError:
     settings = {}
+
+
+def save_settings():
+    settings_file = open(settings_path, 'w')
+    json.dump(settings, settings_file)
+    settings_file.close()
 
 
 def open_folder_dialog(entry, title):
@@ -84,8 +91,8 @@ def sort_button_pressed(event):
         result_window = None
 
     def _sorting_thread_body():
-        for is_done, file_name in sort(src_path, dst_path, fmt):
-
+        for is_done, file_name in sort(
+                src_path, dst_path, fmt, method_var.get()):
             try:
                 result_pgb.step(1)
                 if is_done:
@@ -113,7 +120,7 @@ def sort_button_pressed(event):
     src_path = src_fld.get()
     dst_path = dst_fld.get()
     fmt = fmt_fld.get()
-    is_valid, msg = validate(src_path, dst_path, fmt)
+    is_valid, msg = validate(src_path, dst_path, fmt, method_var.get())
     if not is_valid:
         messagebox.showerror(
             title=_('Validation error'),
@@ -156,12 +163,17 @@ def sort_button_pressed(event):
         # update settings
         if src_path not in settings[SRC_SETTINGS_KEY]:
             settings[SRC_SETTINGS_KEY].append(src_path)
+            src_fld.config(values=get_src_choices())
 
         if dst_path not in settings[DST_SETTINGS_KEY]:
             settings[DST_SETTINGS_KEY].append(dst_path)
+            dst_fld.config(values=get_dst_choices())
 
         if fmt not in settings[FMT_SETTINGS_KEY]:
             settings[FMT_SETTINGS_KEY].append(fmt)
+            fmt_fld.config(values=get_fmt_choices())
+
+        save_settings()
 
 
 def get_src_choices():
@@ -177,9 +189,8 @@ def get_fmt_choices():
 
 
 def close_main_window():
-    settings_file = open(settings_path, 'w')
-    json.dump(settings, settings_file)
-    settings_file.close()
+    save_settings()
+    sys.exit()
 
 
 main_window = Tk()
@@ -204,6 +215,12 @@ fmt_lbl = Label(main_window, text=_('Folder structure format'),
 fmt_fld = Combobox(main_window, values=get_fmt_choices(), width=FIELD_WIDTH)
 fmt_btn = Button(main_window, text=_('?'), width=BUTTON_WIDTH)
 
+method_lbl = Label(main_window, text=_('Sorting method'),
+                   width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+method_var = StringVar(main_window, SortMethodEnum.values[SortMethodEnum.COPY])
+method_fld = OptionMenu(main_window, method_var,
+                        *SortMethodEnum.values.values())
+
 # TODO поле выбора языка
 
 main_btn = Button(main_window, text=_('Sort'))
@@ -220,8 +237,10 @@ fmt_lbl.grid(row=2, column=0)
 fmt_fld.grid(row=2, column=1, sticky=W)
 fmt_btn.grid(row=2, column=2)
 
-main_btn.grid(row=3, column=1)
+method_lbl.grid(row=3, column=0)
+method_fld.grid(row=3, column=1)
 
+main_btn.grid(row=4, column=1)
 
 src_btn.bind(
     '<Button-1>',

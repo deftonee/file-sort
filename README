@@ -19,5 +19,6 @@ Deployment on macOS:
 
 Assembling for macOS:
 
+py2applet --make-setup FileSorter.py pic.icns
 rm -rf build dist
 python3 setup.py py2app

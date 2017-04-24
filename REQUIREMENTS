@@ -4,6 +4,7 @@ python-magic==0.4.13
 
 
 # to build an application
+py2app==0.12
 setuptools==32.2.0
 macholib==1.8
 modulegraph==0.14
