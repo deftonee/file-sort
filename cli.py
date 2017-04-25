@@ -1,4 +1,5 @@
 
+import argparse
 import os
 import sys
 
@@ -12,33 +13,45 @@ PGB_ON_CHAR = '#'
 PGB_OFF_CHAR = ' '
 PGB_FULL_WIDTH = len(PGB_TEMPLATE % (PGB_OFF_CHAR * PGB_WIDTH))
 
-if len(sys.argv) != 4:
-    sys.stdout.write('[FAIL] %s\n%s\n' % (
-        _('Not enough arguments. Example:'),
-        '$ python3 cli.py /home/user/src /home/user/dst %T/%Y/%m-%d'
-    ))
-    sys.stdout.flush()
-    sys.exit()
+parser = argparse.ArgumentParser()
+
+parser.add_argument('src_path', type=str,
+                    help=_('Source folder'))
+parser.add_argument('dst_path', type=str,
+                    help=_('Destination folder'))
+parser.add_argument('path_format', type=str,
+                    help=_('Folder structure format'))
+parser.add_argument("-m", "--move",
+                    help=_('Move files instead of copying them'),
+                    action="store_true")
+
+args = parser.parse_args()
 
 try:
-    src_path = sys.argv[1]
-    dst_path = sys.argv[2]
-    path_format = sys.argv[3]
-
-    is_valid, msg = validate(src_path, dst_path, path_format,
-                             SortMethodEnum.values[SortMethodEnum.COPY])
+    is_valid, msg = validate(
+        args.src_path,
+        args.dst_path,
+        args.path_format,
+        SortMethodEnum.values[
+            SortMethodEnum.MOVE if args.move else SortMethodEnum.COPY
+        ]
+    )
     if is_valid:
 
         total = 0
-        for x in os.walk(src_path):
+        for x in os.walk(args.src_path):
             total += len(x[2])
         delta = PGB_WIDTH / total
 
         i = 0
 
         for is_done, file_name in sort(
-                src_path, dst_path, path_format,
-                SortMethodEnum.values[SortMethodEnum.COPY]
+                args.src_path,
+                args.dst_path,
+                args.path_format,
+                SortMethodEnum.values[
+                    SortMethodEnum.MOVE if args.move else SortMethodEnum.COPY
+                ]
         ):
             i += delta
 
@@ -61,7 +74,13 @@ try:
             )))
             sys.stdout.flush()
 
-        sys.stdout.write('\n[INFO] %s\n' % _('Sort process completed'))
+        sys.stdout.write(''.join((
+            '\r',
+            PGB_TEMPLATE % (PGB_ON_CHAR * PGB_WIDTH),
+            '\n[INFO] ',
+            _('Sort process completed'),
+            '\n',
+        )))
         sys.stdout.flush()
 
     else:
