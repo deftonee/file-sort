@@ -4,8 +4,7 @@ import os
 import sys
 
 from gettext import gettext as _
-from main import validate, sort, SortMethodEnum
-
+from main import validate, sort, SortMethodEnum, FORMAT_HELP
 
 PGB_WIDTH = 40
 PGB_TEMPLATE = '[%s]'
@@ -13,7 +12,7 @@ PGB_ON_CHAR = '#'
 PGB_OFF_CHAR = ' '
 PGB_FULL_WIDTH = len(PGB_TEMPLATE % (PGB_OFF_CHAR * PGB_WIDTH))
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(epilog=FORMAT_HELP)
 
 parser.add_argument('src_path', type=str,
                     help=_('Source folder'))

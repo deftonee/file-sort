@@ -167,6 +167,7 @@ def sort(src_path, dst_path, path_format, method):
     :param src_path:
     :param dst_path:
     :param path_format:
+    :param method: 
     :return:
     """
     path_structure = []

@@ -17,7 +17,6 @@ from main import sort, validate, FORMAT_HELP, SortMethodEnum
 # locale.setlocale(locale.LC_TIME, locale_var)
 
 LABEL_WIDTH = 20
-FIELD_WIDTH = 20
 BUTTON_WIDTH = 5
 PROGRESSBAR_LENGTH = 200
 SETTINGS_FILENAME = 'settings.json'
@@ -202,17 +201,17 @@ main_window.protocol("WM_DELETE_WINDOW", close_main_window)
 
 src_lbl = Label(main_window, text=_('Source folder'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-src_fld = Combobox(main_window, values=get_src_choices(), width=FIELD_WIDTH)
+src_fld = Combobox(main_window, values=get_src_choices())
 src_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
 
 dst_lbl = Label(main_window, text=_('Destination folder'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-dst_fld = Combobox(main_window, values=get_dst_choices(), width=FIELD_WIDTH)
+dst_fld = Combobox(main_window, values=get_dst_choices())
 dst_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
 
 fmt_lbl = Label(main_window, text=_('Folder structure format'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-fmt_fld = Combobox(main_window, values=get_fmt_choices(), width=FIELD_WIDTH)
+fmt_fld = Combobox(main_window, values=get_fmt_choices())
 fmt_btn = Button(main_window, text=_('?'), width=BUTTON_WIDTH)
 
 method_lbl = Label(main_window, text=_('Sorting method'),
@@ -226,19 +225,19 @@ method_fld = OptionMenu(main_window, method_var,
 main_btn = Button(main_window, text=_('Sort'))
 
 src_lbl.grid(row=0, column=0)
-src_fld.grid(row=0, column=1, sticky=W)
+src_fld.grid(row=0, column=1, sticky=E + W)
 src_btn.grid(row=0, column=2)
 
 dst_lbl.grid(row=1, column=0)
-dst_fld.grid(row=1, column=1, sticky=W)
+dst_fld.grid(row=1, column=1, sticky=E + W)
 dst_btn.grid(row=1, column=2)
 
 fmt_lbl.grid(row=2, column=0)
-fmt_fld.grid(row=2, column=1, sticky=W)
+fmt_fld.grid(row=2, column=1, sticky=E + W)
 fmt_btn.grid(row=2, column=2)
 
 method_lbl.grid(row=3, column=0)
-method_fld.grid(row=3, column=1)
+method_fld.grid(row=3, column=1, sticky=E + W)
 
 main_btn.grid(row=4, column=1)
 
