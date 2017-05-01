@@ -3,8 +3,7 @@ import argparse
 import os
 import sys
 
-from gettext import gettext as _
-from main import validate, sort, SortMethodEnum, FORMAT_HELP
+from main import FORMAT_HELP, sort, SortMethodEnum, translator as _, validate
 
 PGB_WIDTH = 40
 PGB_TEMPLATE = '[%s]'

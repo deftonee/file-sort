@@ -6,11 +6,9 @@ Icon made by Creaticca Creative Agency from www.flaticon.com is licensed by CC 3
 
 
 Deployment on Linux:
-sudo apt-get install python3
-sudo apt-get install python3-tk
-sudo apt-get install magic
+sudo apt-get install python3 python3-tk magic
 
-
+virtualenv -r python3 file-sort
 pip install -r REQUIREMENTS
 
 

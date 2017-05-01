@@ -1,20 +1,15 @@
 
-import locale
 import json
 import os
 import threading
 
-from gettext import gettext as _
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
-from main import sort, validate, FORMAT_HELP, SortMethodEnum
-
-# locale_var = 'ru_RU'
-# locale.setlocale(locale.LC_TIME, locale_var)
+from main import FORMAT_HELP, sort, SortMethodEnum, translator as _, validate
 
 LABEL_WIDTH = 20
 BUTTON_WIDTH = 5
@@ -219,8 +214,6 @@ method_lbl = Label(main_window, text=_('Sorting method'),
 method_var = StringVar(main_window, SortMethodEnum.values[SortMethodEnum.COPY])
 method_fld = OptionMenu(main_window, method_var,
                         *SortMethodEnum.values.values())
-
-# TODO поле выбора языка
 
 main_btn = Button(main_window, text=_('Sort'))
 

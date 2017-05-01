@@ -1,16 +1,28 @@
 
-import logging
 import magic
 import os
 import re
 import shutil
 
-from collections import OrderedDict
 from datetime import datetime
 from functools import wraps
-from gettext import gettext as _
+from gettext import gettext, translation
+from locale import getdefaultlocale
 from PIL import Image
 
+
+def get_translator():
+
+    result = gettext
+    default_locale = getdefaultlocale()
+    if default_locale:
+        t = translation('file-sort', localedir='./locale', languages=[default_locale[0]])
+        if t:
+            t.install()
+            result = t.gettext
+    return result
+
+_ = translator = get_translator()
 
 CONTENT_TYPE_TAGS = ('%T', )
 EXTENSION_TAGS = ('%E', )
@@ -21,6 +33,7 @@ ALL_TAGS = CONTENT_TYPE_TAGS + EXTENSION_TAGS + DATETIME_TAGS
 TAG_PATTERN = '%[a-zA-Z]'
 PATH_DELIMITER = '/'
 FORMAT_HELP = _('''
+    /  - Folder structure separator
     %T - Content type name of file (Images, Videos, ...)
     %E - Extension of file (jpg, png, doc, avi, ...)
     %Y - Year with century as a decimal number
@@ -38,9 +51,6 @@ FORMAT_HELP = _('''
     %I - Hour (12-hour clock) as a decimal number [01,12]
     %p - Locale's equivalent of either AM or PM
 ''')
-
-logger = logging.getLogger('sort process')
-logger.setLevel(logging.INFO)
 
 
 class File:
