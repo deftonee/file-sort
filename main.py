@@ -1,26 +1,31 @@
 
+import locale
 import magic
 import os
 import re
 import shutil
 
 from datetime import datetime
-from functools import wraps
 from gettext import gettext, translation
-from locale import getdefaultlocale
+
 from PIL import Image
 
 
 def get_translator():
 
     result = gettext
-    default_locale = getdefaultlocale()
+    default_locale = locale.getdefaultlocale()
     if default_locale:
+        try:
+            locale.setlocale(locale.LC_TIME, '.'.join(default_locale))
+        except locale.Error:
+            pass
         t = translation('file-sort', localedir='./locale', languages=[default_locale[0]])
         if t:
             t.install()
             result = t.gettext
     return result
+
 
 _ = translator = get_translator()
 
@@ -50,6 +55,9 @@ FORMAT_HELP = _('''
     %c - Locale's appropriate date and time representation
     %I - Hour (12-hour clock) as a decimal number [01,12]
     %p - Locale's equivalent of either AM or PM
+    
+    Format example: %T/%Y/%m%B - %d
+    Path example for this format: Images/2017/05May - 02/    
 ''')
 
 
@@ -155,22 +163,6 @@ class ContentTypesEnum:
 CTE = ContentTypesEnum
 
 
-def logged(fn):
-    @wraps(fn)
-    def _inner(name):
-
-        logger.info(
-            'Start processing of "%s"' % name)
-        try:
-            fn(name)
-        except (OSError, ) as e:
-            logger.error(e)
-        else:
-            logger.info('Done')
-
-    return _inner
-
-
 def sort(src_path, dst_path, path_format, method):
     """
     Sort files from src_path and place them in dst_path according to path_format
@@ -199,7 +191,6 @@ def sort(src_path, dst_path, path_format, method):
                 for result in process_folder(current_path):
                     yield result
 
-    @logged
     def process_file(file_path):
         """ Process file """
         mime_info = magic.from_file(file_path, mime=True) or ''
