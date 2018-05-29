@@ -3,15 +3,19 @@ import json
 import os
 import threading
 
+from gettext import gettext as _
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
-from main import FORMAT_HELP, sort, SortMethodEnum, translator as _, validate
+from main import (
+    FORMAT_HELP, sort, SortMethodEnum, validate, ConflictResolveMethodEnum,
+    FolderCleanupOptionsEnum)
 
-LABEL_WIDTH = 20
+LABEL_WIDTH = 25
+FIELD_WIDTH = 25
 BUTTON_WIDTH = 5
 PROGRESSBAR_LENGTH = 200
 SETTINGS_FILENAME = 'settings.json'
@@ -28,7 +32,7 @@ try:
     settings_file = open(settings_path, 'r')
     settings = json.load(settings_file)
     settings_file.close()
-except FileNotFoundError:
+except (FileNotFoundError, json.decoder.JSONDecodeError):
     settings = {}
 
 
@@ -84,9 +88,15 @@ def sort_button_pressed(event):
         del result_window
         result_window = None
 
+    sm = SortMethodEnum.get_by_value(method_var.get())
+    crm = ConflictResolveMethodEnum.get_by_value(conflict_var.get())
+    co = cleanup_var.get()
+
     def _sorting_thread_body():
         for is_done, file_name in sort(
-                src_path, dst_path, fmt, method_var.get()):
+                src_path=src_path, dst_path=dst_path, path_format=fmt,
+                method=sm, conflict_resolve_method=crm, cleanup_option=co
+        ):
             try:
                 result_pgb.step(1)
                 if is_done:
@@ -114,7 +124,9 @@ def sort_button_pressed(event):
     src_path = src_fld.get()
     dst_path = dst_fld.get()
     fmt = fmt_fld.get()
-    is_valid, msg = validate(src_path, dst_path, fmt, method_var.get())
+    is_valid, msg = validate(src_path=src_path, dst_path=dst_path,
+                             path_format=fmt, method=sm,
+                             conflict_resolve_method=crm, cleanup_option=co)
     if not is_valid:
         messagebox.showerror(
             title=_('Validation error'),
@@ -196,24 +208,40 @@ main_window.protocol("WM_DELETE_WINDOW", close_main_window)
 
 src_lbl = Label(main_window, text=_('Source folder'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-src_fld = Combobox(main_window, values=get_src_choices())
+src_fld = Combobox(main_window, values=get_src_choices(), width=FIELD_WIDTH)
 src_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
 
 dst_lbl = Label(main_window, text=_('Destination folder'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-dst_fld = Combobox(main_window, values=get_dst_choices())
+dst_fld = Combobox(main_window, values=get_dst_choices(), width=FIELD_WIDTH)
 dst_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
 
 fmt_lbl = Label(main_window, text=_('Folder structure format'),
                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-fmt_fld = Combobox(main_window, values=get_fmt_choices())
+fmt_fld = Combobox(main_window, values=get_fmt_choices(), width=FIELD_WIDTH)
 fmt_btn = Button(main_window, text=_('?'), width=BUTTON_WIDTH)
 
 method_lbl = Label(main_window, text=_('Sorting method'),
                    width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-method_var = StringVar(main_window, SortMethodEnum.values[SortMethodEnum.COPY])
+method_var = StringVar(main_window,
+                       SortMethodEnum.values[SortMethodEnum.default_key])
 method_fld = OptionMenu(main_window, method_var,
                         *SortMethodEnum.values.values())
+
+conflict_lbl = Label(main_window, text=_('Conflict resolving method'),
+                     width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+conflict_var = StringVar(
+    main_window,
+    ConflictResolveMethodEnum.values[ConflictResolveMethodEnum.default_key])
+conflict_fld = OptionMenu(main_window, conflict_var,
+                          *ConflictResolveMethodEnum.values.values())
+
+cleanup_lbl = Label(main_window, text=_('Remove empty folders from source'),
+                    width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+cleanup_var = IntVar(main_window, FolderCleanupOptionsEnum.default_key)
+cleanup_fld = Checkbutton(main_window, variable=cleanup_var,
+                          offvalue=FolderCleanupOptionsEnum.LEAVE,
+                          onvalue=FolderCleanupOptionsEnum.REMOVE)
 
 main_btn = Button(main_window, text=_('Sort'))
 
@@ -232,7 +260,13 @@ fmt_btn.grid(row=2, column=2)
 method_lbl.grid(row=3, column=0)
 method_fld.grid(row=3, column=1, sticky=E + W)
 
-main_btn.grid(row=4, column=1)
+conflict_lbl.grid(row=4, column=0)
+conflict_fld.grid(row=4, column=1, sticky=E + W)
+
+cleanup_lbl.grid(row=5, column=0)
+cleanup_fld.grid(row=5, column=1, sticky=E + W)
+
+main_btn.grid(row=6, column=1)
 
 src_btn.bind(
     '<Button-1>',
@@ -252,4 +286,3 @@ main_btn.bind(
 )
 
 mainloop()
-

@@ -3,8 +3,13 @@ import argparse
 import os
 import sys
 
-from main import FORMAT_HELP, sort, SortMethodEnum, translator as _, validate
+from gettext import gettext as _
 
+from main import (
+    FORMAT_HELP, sort, SortMethodEnum, validate, ConflictResolveMethodEnum,
+    FolderCleanupOptionsEnum)
+
+# progress bar constants
 PGB_WIDTH = 40
 PGB_TEMPLATE = '[%s]'
 PGB_ON_CHAR = '#'
@@ -22,18 +27,42 @@ parser.add_argument('path_format', type=str,
 parser.add_argument("-m", "--move",
                     help=_('Move files instead of copying them'),
                     action="store_true")
+parser.add_argument("-r", "--replace",
+                    help=_('Replace files with same names'),
+                    action="store_true")
+parser.add_argument("-n", "--do-nothing",
+                    help=_(
+                        'Do nothing when file with same name already exists'),
+                    action="store_true")
+parser.add_argument("-d", "--dispose-folders",
+                    help=_('Dispose empty folders'),
+                    action="store_true")
 
 args = parser.parse_args()
 
 try:
+    if args.move:
+        sm = SortMethodEnum.MOVE
+    else:
+        sm = SortMethodEnum.COPY
+
+    if args.replace:
+        crm = ConflictResolveMethodEnum.REPLACE
+    elif args.do_nothing:
+        crm = ConflictResolveMethodEnum.DO_NOTHING
+    else:
+        crm = ConflictResolveMethodEnum.SAVE_ALL
+
+    if args.dispose_folders:
+        co = FolderCleanupOptionsEnum.REMOVE
+    else:
+        co = FolderCleanupOptionsEnum.LEAVE
+
     is_valid, msg = validate(
-        args.src_path,
-        args.dst_path,
-        args.path_format,
-        SortMethodEnum.values[
-            SortMethodEnum.MOVE if args.move else SortMethodEnum.COPY
-        ]
-    )
+        src_path=args.src_path, dst_path=args.dst_path,
+        path_format=args.path_format, method=sm,
+        conflict_resolve_method=crm, cleanup_option=co)
+
     if is_valid:
 
         total = 0
@@ -44,13 +73,9 @@ try:
         i = 0
 
         for is_done, file_name in sort(
-                args.src_path,
-                args.dst_path,
-                args.path_format,
-                SortMethodEnum.values[
-                    SortMethodEnum.MOVE if args.move else SortMethodEnum.COPY
-                ]
-        ):
+                src_path=args.src_path, dst_path=args.dst_path,
+                path_format=args.path_format, method=sm,
+                conflict_resolve_method=crm, cleanup_option=co):
             i += delta
 
             # erase last line
@@ -95,4 +120,3 @@ except ZeroDivisionError:
     sys.stdout.flush()
 
 sys.exit()
-

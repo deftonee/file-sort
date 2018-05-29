@@ -4,31 +4,20 @@ import magic
 import os
 import re
 import shutil
+import sys
 
+from typing import Tuple, Iterator
 from datetime import datetime
-from gettext import gettext, translation
+from gettext import gettext as _, bindtextdomain
 
 from PIL import Image
 
 
-def get_translator():
+# settings for translation
+bindtextdomain('messages', os.path.join(os.path.dirname(sys.argv[0]), 'locale'))
+os.environ['LANGUAGE'] = '.'.join(locale.getdefaultlocale())
 
-    result = gettext
-    default_locale = locale.getdefaultlocale()
-    if default_locale:
-        try:
-            locale.setlocale(locale.LC_TIME, '.'.join(default_locale))
-        except locale.Error:
-            pass
-        t = translation('file-sort', localedir='./locale', languages=[default_locale[0]])
-        if t:
-            t.install()
-            result = t.gettext
-    return result
-
-
-_ = translator = get_translator()
-
+# constants
 CONTENT_TYPE_TAGS = ('%T', )
 EXTENSION_TAGS = ('%E', )
 DATETIME_TAGS = ('%Y', '%m', '%d', '%H', '%M', '%S', '%z',
@@ -111,13 +100,65 @@ class ImageFile(File):
             return datetime.fromtimestamp(os.path.getmtime(self.path))
 
 
-class SortMethodEnum:
+class Enum:
+    values = {}
+    default_key = None
+
+    @classmethod
+    def get_by_value(cls, value):
+        return next(
+            (k for k, v in cls.values.items() if v == value),
+            cls.default_key
+        )
+
+
+class SortMethodEnum(Enum):
+    """ What to do with files """
     COPY = 1
     MOVE = 2
+    default_key = COPY
 
     values = {
         COPY: _('Copy'),
         MOVE: _('Move'),
+    }
+
+
+class ConflictResolveMethodEnum(Enum):
+    """ What to do if file with same name already exists in dst folder """
+    REPLACE = 1
+    SAVE_ALL = 2
+    DO_NOTHING = 3
+    default_key = SAVE_ALL
+
+    values = {
+        REPLACE: _('Replace'),
+        SAVE_ALL: _('Save all files with different names'),
+        DO_NOTHING: _('Do nothing'),
+    }
+
+
+class FolderCleanupOptionsEnum(Enum):
+    """ Remove or leave empty folders """
+    REMOVE = 1
+    LEAVE = 2
+    default_key = LEAVE
+
+    values = {
+        REMOVE: _('Remove'),
+        LEAVE: _('Leave'),
+    }
+
+
+class HiddenOptionEnum(Enum):
+    """ Process hidden files and folders """
+    YES = 1
+    NO = 2
+    default_key = NO
+
+    values = {
+        YES: _('Process hidden objects'),
+        NO: _('Not process hidden objects'),
     }
 
 
@@ -141,40 +182,27 @@ class ContentTypesEnum:
         VIDEO: _('Videos'),
         AUDIO: _('Audios'),
         TEXT: _('Documents'),
-        APPLICATION: DEFAULT_FOLDER_NAME,
-        EXAMPLE: DEFAULT_FOLDER_NAME,
-        MESSAGE: DEFAULT_FOLDER_NAME,
-        MODEL: DEFAULT_FOLDER_NAME,
-        MULTIPART: DEFAULT_FOLDER_NAME,
     }
 
     classes = {
         IMAGE: ImageFile,
-        VIDEO: DEFAULT_CLASS,
-        APPLICATION: DEFAULT_CLASS,
-        AUDIO: DEFAULT_CLASS,
-        EXAMPLE: DEFAULT_CLASS,
-        MESSAGE: DEFAULT_CLASS,
-        MODEL: DEFAULT_CLASS,
-        MULTIPART: DEFAULT_CLASS,
-        TEXT: DEFAULT_CLASS,
     }
 
+
 CTE = ContentTypesEnum
+CRE = ConflictResolveMethodEnum
 
 
-def sort(src_path, dst_path, path_format, method):
+def sort(src_path: str, dst_path: str,
+         path_format: str, method: int,
+         conflict_resolve_method: int,
+         cleanup_option: int) -> Iterator[Tuple[bool, str]]:
     """
     Sort files from src_path and place them in dst_path according to path_format
-    :param src_path:
-    :param dst_path:
-    :param path_format:
-    :param method: 
-    :return:
     """
     path_structure = []
 
-    def process_folder(folder_path):
+    def process_folder(folder_path: str) -> Iterator[Tuple[bool, str]]:
         """ Process folder """
         if not os.path.isdir(folder_path):
             return
@@ -191,21 +219,17 @@ def sort(src_path, dst_path, path_format, method):
                 for result in process_folder(current_path):
                     yield result
 
-    def process_file(file_path):
+    def process_file(file_path: str) -> None:
         """ Process file """
+
+        # constructing file's new path
         mime_info = magic.from_file(file_path, mime=True) or ''
         file_type = mime_info.split('/')[0]
-
-        file_obj = CTE.classes.get(
-            file_type, CTE.DEFAULT_CLASS
-        )(
-            file_path, file_type
-        )
+        file_obj = CTE.classes.get(file_type, CTE.DEFAULT_CLASS)(
+            file_path, file_type)
 
         new_path_parts = [dst_path]
-
         for lvl, lvl_tags in path_structure:
-
             if not lvl_tags.issubset(file_obj.supported_tags):
                 new_path_parts.append(CTE.DEFAULT_FOLDER_NAME)
             else:
@@ -228,14 +252,42 @@ def sort(src_path, dst_path, path_format, method):
 
                 new_path_parts.append(lvl)
 
-        new_file_path = os.path.join(*new_path_parts)
+        new_file_dir = os.path.join(*new_path_parts)
 
-        if not os.path.exists(new_file_path):
-            os.makedirs(new_file_path)
-        if method == SortMethodEnum.values[SortMethodEnum.COPY]:
-            shutil.copy2(file_path, new_file_path)
-        elif method == SortMethodEnum.values[SortMethodEnum.MOVE]:
-            shutil.move(file_path, new_file_path, shutil.copy2)
+        file_name, file_ext = os.path.splitext(os.path.basename(file_path))
+
+        new_file_path = os.path.join(
+            new_file_dir,
+            '%s%s' % (file_name, file_ext))
+
+        if not os.path.exists(new_file_dir):
+            os.makedirs(new_file_dir)
+
+        # resolving conflict if file already exists
+        if os.path.exists(new_file_path):
+            if conflict_resolve_method == CRE.REPLACE:
+                os.remove(new_file_path)
+            elif conflict_resolve_method == CRE.SAVE_ALL:
+                i = 2
+                while os.path.exists(new_file_path):
+                    new_file_path = os.path.join(
+                        new_file_dir,
+                        '%s (%s)%s' % (file_name, i, file_ext))
+                    i += 1
+            elif conflict_resolve_method == CRE.DO_NOTHING:
+                return
+
+        # doing main job
+        if method == SortMethodEnum.COPY:
+            shutil.copy2(file_path, new_file_dir)
+        elif method == SortMethodEnum.MOVE:
+            shutil.move(file_path, new_file_dir, shutil.copy2)
+
+        # delete empty old folder if needed
+        if cleanup_option == FolderCleanupOptionsEnum.REMOVE:
+            old_file_dir = os.path.dirname(file_path)
+            if not os.listdir(old_file_dir):
+                os.rmdir(old_file_dir)
 
     for part in path_format.split(PATH_DELIMITER):
         path_structure.append((part, set(re.findall(TAG_PATTERN, part))))
@@ -244,19 +296,27 @@ def sort(src_path, dst_path, path_format, method):
         yield result
 
 
-def validate(src_path, dst_path, path_format, method):
+def validate(src_path: str, dst_path: str,
+             path_format: str, method: int,
+             conflict_resolve_method: int,
+             cleanup_option: int) -> Tuple[bool, str]:
+    """ check all input parameters """
     if not os.path.isdir(src_path):
         return False, _('Source folder path is not valid')
     if not os.path.isdir(dst_path):
         return False, _('Destination folder path is not valid')
 
-    if (
-            not path_format
-            or not set(re.findall(TAG_PATTERN, path_format)).issubset(ALL_TAGS)
-    ):
+    if (not path_format or
+            not set(re.findall(TAG_PATTERN, path_format)).issubset(ALL_TAGS)):
         return False, _('Path format is not valid')
 
-    if method not in SortMethodEnum.values.values():
+    if method not in SortMethodEnum.values:
         return False, _('Sorting method is not valid')
+
+    if conflict_resolve_method not in ConflictResolveMethodEnum.values:
+        return False, _('Conflict resolving method is not valid')
+
+    if cleanup_option not in FolderCleanupOptionsEnum.values:
+        return False, _('Remove empty folders option is not valid')
 
     return True, ''
