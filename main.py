@@ -1,5 +1,4 @@
 import locale
-import magic
 import os
 import re
 import shutil
@@ -11,11 +10,26 @@ from gettext import gettext as _, bindtextdomain
 from enums import SME, FCE, CRE, CTE
 from tag_processor import TagProcessor
 
+try:
+    import magic
+except ImportError:
+    magic = None
+
 # settings for translation
-default_locale = '%s.%s' % locale.getdefaultlocale()
+code, encoding = locale.getdefaultlocale()
+locale_variants = (
+    f'{code}.{encoding}',
+    *code.split('_')
+)
 bindtextdomain('messages', os.path.join(os.path.dirname(sys.argv[0]), 'locale'))
-os.environ['LANGUAGE'] = default_locale
-locale.setlocale(locale.LC_ALL, default_locale)
+for variant in locale_variants:
+    os.environ['LANGUAGE'] = variant
+    try:
+        locale.setlocale(locale.LC_ALL, variant)
+    except locale.Error:
+        continue
+    else:
+        break
 
 # constants
 PATH_DELIMITER = '/'
@@ -55,12 +69,16 @@ def sort(
     def process_file(file_path: str) -> None:
         """ Process file """
 
-        # constructing file's new path
-        mime_info = magic.from_file(file_path, mime=True) or ''
-        file_type = CTE(mime_info.split('/')[0])
+        # defining type of file
+        if magic is not None:
+            mime_info = magic.from_file(file_path, mime=True) or ''
+            file_type = CTE(mime_info.split('/')[0])
+        else:
+            file_type = ''
         cls = CTE.get_class(file_type)
         file_obj = cls(file_path, file_type)
 
+        # constructing file's new path
         new_path_parts = [dst_path]
         for lvl, lvl_tags in path_structure:
             lvl = TagProcessor.process_string(
