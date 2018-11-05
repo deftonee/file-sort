@@ -5,9 +5,9 @@ import sys
 
 from gettext import gettext as _
 
-from main import (
-    FORMAT_HELP, sort, SortMethodEnum, validate, ConflictResolveMethodEnum,
-    FolderCleanupOptionsEnum)
+from main import sort, validate_paths
+from enums import SME, CRE, FCE
+from tag_classes import TAG_HELP
 
 # progress bar constants
 PGB_WIDTH = 40
@@ -16,7 +16,7 @@ PGB_ON_CHAR = '#'
 PGB_OFF_CHAR = ' '
 PGB_FULL_WIDTH = len(PGB_TEMPLATE % (PGB_OFF_CHAR * PGB_WIDTH))
 
-parser = argparse.ArgumentParser(epilog=FORMAT_HELP)
+parser = argparse.ArgumentParser(epilog=TAG_HELP)
 
 parser.add_argument('src_path', type=str,
                     help=_('Source folder'))
@@ -42,36 +42,33 @@ args = parser.parse_args()
 
 try:
     if args.move:
-        sm = SortMethodEnum.MOVE
+        sm = SME.MOVE
     else:
-        sm = SortMethodEnum.COPY
+        sm = SME.COPY
 
     if args.replace:
-        crm = ConflictResolveMethodEnum.REPLACE
+        crm = CRE.REPLACE
     elif args.do_nothing:
-        crm = ConflictResolveMethodEnum.DO_NOTHING
+        crm = CRE.DO_NOTHING
     else:
-        crm = ConflictResolveMethodEnum.SAVE_ALL
+        crm = CRE.SAVE_ALL
 
     if args.dispose_folders:
-        co = FolderCleanupOptionsEnum.REMOVE
+        co = FCE.REMOVE
     else:
-        co = FolderCleanupOptionsEnum.LEAVE
+        co = FCE.LEAVE
 
-    is_valid, msg = validate(
-        src_path=args.src_path, dst_path=args.dst_path,
-        path_format=args.path_format, method=sm,
-        conflict_resolve_method=crm, cleanup_option=co)
+    total = 0
+    for x in os.walk(args.src_path):
+        total += len(x[2])
+    delta = PGB_WIDTH / total
+
+    i = 0.0
+
+    is_valid, msg = validate_paths(src_path=args.src_path,
+                                   dst_path=args.dst_path)
 
     if is_valid:
-
-        total = 0
-        for x in os.walk(args.src_path):
-            total += len(x[2])
-        delta = PGB_WIDTH / total
-
-        i = 0
-
         for is_done, file_name in sort(
                 src_path=args.src_path, dst_path=args.dst_path,
                 path_format=args.path_format, method=sm,
@@ -107,7 +104,7 @@ try:
         sys.stdout.flush()
 
     else:
-        sys.stdout.write('\n[FAIL] %s\n' % msg)
+        sys.stdout.write(f'\n[FAIL] {msg}\n')
         sys.stdout.flush()
 
 

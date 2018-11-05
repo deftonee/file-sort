@@ -5,170 +5,368 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2017-05-01 22:50+MSK\n"
+"POT-Creation-Date: 2018-11-04 23:41+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
-"Content-Transfer-Encoding: ENCODING\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ./FileSorter.py:73
+#: /Users/konstantin/projects/fileSort/FileSorter.py:67
 msgid "Format help"
 msgstr ""
 
-#: ./FileSorter.py:84
+#: /Users/konstantin/projects/fileSort/FileSorter.py:78
 msgid "Understood"
 msgstr ""
 
-#: ./FileSorter.py:107
+#: /Users/konstantin/projects/fileSort/FileSorter.py:107
 msgid "Information"
 msgstr ""
 
-#: ./FileSorter.py:108 ./cli.py:91
+#: /Users/konstantin/projects/fileSort/FileSorter.py:108
+#: /Users/konstantin/projects/fileSort/cli.py:112
 msgid "The sorting process is interrupted"
 msgstr ""
 
-#: ./FileSorter.py:114
+#: /Users/konstantin/projects/fileSort/FileSorter.py:114
 msgid "Success"
 msgstr ""
 
-#: ./FileSorter.py:115 ./cli.py:80
+#: /Users/konstantin/projects/fileSort/FileSorter.py:115
+#: /Users/konstantin/projects/fileSort/cli.py:101
 msgid "Sort process completed"
 msgstr ""
 
-#: ./FileSorter.py:129
+#: /Users/konstantin/projects/fileSort/FileSorter.py:129
 msgid "Validation error"
 msgstr ""
 
-#: ./FileSorter.py:139
+#: /Users/konstantin/projects/fileSort/FileSorter.py:138
 msgid "Sorting process"
 msgstr ""
 
-#: ./FileSorter.py:152
+#: /Users/konstantin/projects/fileSort/FileSorter.py:151
 msgid "Done"
 msgstr ""
 
-#: ./FileSorter.py:153
+#: /Users/konstantin/projects/fileSort/FileSorter.py:152
 msgid "Fails"
 msgstr ""
 
-#: ./FileSorter.py:200
+#: /Users/konstantin/projects/fileSort/FileSorter.py:199
 msgid "File Sorter"
 msgstr ""
 
-#: ./FileSorter.py:206 ./cli.py:18
+#: /Users/konstantin/projects/fileSort/FileSorter.py:205
+#: /Users/konstantin/projects/fileSort/cli.py:22
 msgid "Source folder"
 msgstr ""
 
-#: ./FileSorter.py:209 ./FileSorter.py:214
+#: /Users/konstantin/projects/fileSort/FileSorter.py:208
+#: /Users/konstantin/projects/fileSort/FileSorter.py:213
 msgid "View"
 msgstr ""
 
-#: ./FileSorter.py:211 ./cli.py:20
+#: /Users/konstantin/projects/fileSort/FileSorter.py:210
+#: /Users/konstantin/projects/fileSort/cli.py:24
 msgid "Destination folder"
 msgstr ""
 
-#: ./FileSorter.py:216 ./cli.py:22
+#: /Users/konstantin/projects/fileSort/FileSorter.py:215
+#: /Users/konstantin/projects/fileSort/cli.py:26
 msgid "Folder structure format"
 msgstr ""
 
-#: ./FileSorter.py:219
+#: /Users/konstantin/projects/fileSort/FileSorter.py:218
 msgid "?"
 msgstr ""
 
-#: ./FileSorter.py:221
+#: /Users/konstantin/projects/fileSort/FileSorter.py:220
 msgid "Sorting method"
 msgstr ""
 
-#: ./FileSorter.py:229
+#: /Users/konstantin/projects/fileSort/FileSorter.py:227
+msgid "Conflict resolving method"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/FileSorter.py:235
+msgid "Remove empty folders from source"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/FileSorter.py:242
 msgid "Sort"
 msgstr ""
 
-#: ./FileSorter.py:250
+#: /Users/konstantin/projects/fileSort/FileSorter.py:269
 msgid "Select source folder of your files"
 msgstr ""
 
-#: ./FileSorter.py:254
+#: /Users/konstantin/projects/fileSort/FileSorter.py:273
 msgid "Select destination folder of your files"
 msgstr ""
 
-#: ./cli.py:24
+#: /Users/konstantin/projects/fileSort/cli.py:28
 msgid "Move files instead of copying them"
 msgstr ""
 
-#: ./cli.py:95
+#: /Users/konstantin/projects/fileSort/cli.py:31
+msgid "Replace files with same names"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/cli.py:34
+msgid "Do nothing when file with same name already exists"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/cli.py:38
+msgid "Dispose empty folders"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/cli.py:116
 msgid "No files to sort"
 msgstr ""
 
-#: ./main.py:21
-msgid ""
-"\n"
-"    /  - Folder structure separator\n"
-"    %T - Content type name of file (Images, Videos, ...)\n"
-"    %E - Extension of file (jpg, png, doc, avi, ...)\n"
-"    %Y - Year with century as a decimal number\n"
-"    %m - Month as a decimal number [01,12]\n"
-"    %d - Day of the month as a decimal number [01,31]\n"
-"    %H - Hour (24-hour clock) as a decimal number [00,23]\n"
-"    %M - Minute as a decimal number [00,59]\n"
-"    %S - Second as a decimal number [00,61]\n"
-"    %z - Time zone offset from UTC\n"
-"    %a - Locale's abbreviated weekday name\n"
-"    %A - Locale's full weekday name\n"
-"    %b - Locale's abbreviated month name\n"
-"    %B - Locale's full month name\n"
-"    %c - Locale's appropriate date and time representation\n"
-"    %I - Hour (12-hour clock) as a decimal number [01,12]\n"
-"    %p - Locale's equivalent of either AM or PM\n"
-"    \n"
-"    Format example: %T/%Y/%m%B - %d\n"
-"    Path example for this format: Images/2017/05May - 02/    \n"
-msgstr ""
-
-#: ./main.py:97
-msgid "Copy"
-msgstr ""
-
-#: ./main.py:98
-msgid "Move"
-msgstr ""
-
-#: ./main.py:114
+#: /Users/konstantin/projects/fileSort/enums.py:7
 msgid "Others"
 msgstr ""
 
-#: ./main.py:118
-msgid "Images"
+#: /Users/konstantin/projects/fileSort/enums.py:40
+msgid "Copy"
 msgstr ""
 
-#: ./main.py:119
-msgid "Videos"
+#: /Users/konstantin/projects/fileSort/enums.py:41
+msgid "Move"
 msgstr ""
 
-#: ./main.py:120
-msgid "Audios"
+#: /Users/konstantin/projects/fileSort/enums.py:59
+msgid "Replace"
 msgstr ""
 
-#: ./main.py:121
-msgid "Documents"
+#: /Users/konstantin/projects/fileSort/enums.py:61
+msgid "Save all files with different names"
 msgstr ""
 
-#: ./main.py:244
+#: /Users/konstantin/projects/fileSort/enums.py:63
+msgid "Do nothing"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/enums.py:79
+msgid "Remove"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/enums.py:80
+msgid "Leave"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/enums.py:96
+msgid "Process hidden objects"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/enums.py:97
+msgid "Not process hidden objects"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/main.py:117
 msgid "Source folder path is not valid"
 msgstr ""
 
-#: ./main.py:246
+#: /Users/konstantin/projects/fileSort/main.py:119
 msgid "Destination folder path is not valid"
 msgstr ""
 
-#: ./main.py:252
-msgid "Path format is not valid"
+#: /Users/konstantin/projects/fileSort/tag_classes.py:19
+msgid "Content type name of file (Images, Videos, ...)"
 msgstr ""
 
-#: ./main.py:255
-msgid "Sorting method is not valid"
+#: /Users/konstantin/projects/fileSort/tag_classes.py:22
+msgid "Images"
 msgstr ""
 
+#: /Users/konstantin/projects/fileSort/tag_classes.py:23
+msgid "Videos"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:24
+msgid "Audios"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:25
+msgid "Documents"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:38
+msgid "Extension of file (jpg, png, doc, avi, ...)"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:53
+msgid "Year with century as a decimal number"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:58
+msgid "Month as a decimal number [01,12]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:63
+msgid "Day of the month as a decimal number [01,31]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:68
+msgid "Hour (24-hour clock) as a decimal number [00,23]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:73
+msgid "Minute as a decimal number [00,59]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:78
+msgid "Second as a decimal number [00,61]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:83
+msgid "Time zone offset from UTC"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:88
+msgid "Locale's abbreviated weekday name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:93
+msgid "Locale's full weekday name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:98
+msgid "Locale's abbreviated month name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:103
+msgid "Locale's full month name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:108
+msgid "Locale's appropriate date and time representation"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:113
+msgid "Hour (12-hour clock) as a decimal number [01,12]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:118
+msgid "Locale's equivalent of either AM or PM"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:123
+msgid "Month as a small roman number [ⅰ,ⅻ]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:138
+msgid "Month as a capital roman number [Ⅰ,Ⅻ]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:153
+msgid "Month as number in circle [①,⑫]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:19
+msgid "Content type name of file (Images, Videos, ...)"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:22
+msgid "Images"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:23
+msgid "Videos"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:24
+msgid "Audios"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:25
+msgid "Documents"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:38
+msgid "Extension of file (jpg, png, doc, avi, ...)"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:53
+msgid "Year with century as a decimal number"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:58
+msgid "Month as a decimal number [01,12]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:63
+msgid "Day of the month as a decimal number [01,31]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:68
+msgid "Hour (24-hour clock) as a decimal number [00,23]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:73
+msgid "Minute as a decimal number [00,59]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:78
+msgid "Second as a decimal number [00,61]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:83
+msgid "Time zone offset from UTC"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:88
+msgid "Locale's abbreviated weekday name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:93
+msgid "Locale's full weekday name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:98
+msgid "Locale's abbreviated month name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:103
+msgid "Locale's full month name"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:108
+msgid "Locale's appropriate date and time representation"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:113
+msgid "Hour (12-hour clock) as a decimal number [01,12]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:118
+msgid "Locale's equivalent of either AM or PM"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:123
+msgid "Month as a small roman number [ⅰ,ⅻ]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:138
+msgid "Month as a capital roman number [Ⅰ,Ⅻ]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:153
+msgid "Month as number in circle [①,⑫]"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:191
+msgid "/  - Folder structure separator"
+msgstr ""
+
+#: /Users/konstantin/projects/fileSort/tag_classes.py:193
+msgid ""
+"Format example: %T/%Y/%m%B - %d\n"
+"Path example for this format: Images/2017/05May - 02/"
+msgstr ""

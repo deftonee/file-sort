@@ -1,4 +1,3 @@
-
 import json
 import os
 import threading
@@ -10,9 +9,10 @@ from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
-from main import (
-    FORMAT_HELP, sort, SortMethodEnum, validate, ConflictResolveMethodEnum,
-    FolderCleanupOptionsEnum)
+from main import sort, validate_paths
+from enums import CRE, FCE, SME
+from tag_classes import TAG_HELP
+
 
 LABEL_WIDTH = 25
 FIELD_WIDTH = 25
@@ -72,7 +72,7 @@ def show_format_help(event):
 
     msg = Message(
         format_help_window,
-        text=FORMAT_HELP)
+        text=TAG_HELP)
     msg.pack()
 
     button = Button(format_help_window,
@@ -88,9 +88,9 @@ def sort_button_pressed(event):
         del result_window
         result_window = None
 
-    sm = SortMethodEnum.get_by_value(method_var.get())
-    crm = ConflictResolveMethodEnum.get_by_value(conflict_var.get())
-    co = cleanup_var.get()
+    sm = SME.to_value(method_var.get())
+    crm = CRE.to_value(conflict_var.get())
+    co = FCE(cleanup_var.get())
 
     def _sorting_thread_body():
         for is_done, file_name in sort(
@@ -124,16 +124,13 @@ def sort_button_pressed(event):
     src_path = src_fld.get()
     dst_path = dst_fld.get()
     fmt = fmt_fld.get()
-    is_valid, msg = validate(src_path=src_path, dst_path=dst_path,
-                             path_format=fmt, method=sm,
-                             conflict_resolve_method=crm, cleanup_option=co)
+    is_valid, msg = validate_paths(src_path=src_path, dst_path=dst_path)
     if not is_valid:
         messagebox.showerror(
             title=_('Validation error'),
             message=msg,
         )
     else:
-
         total = 0
         for x in os.walk(src_path):
             total += len(x[2])
@@ -224,24 +221,24 @@ fmt_btn = Button(main_window, text=_('?'), width=BUTTON_WIDTH)
 method_lbl = Label(main_window, text=_('Sorting method'),
                    width=LABEL_WIDTH, anchor=E, justify=RIGHT)
 method_var = StringVar(main_window,
-                       SortMethodEnum.values[SortMethodEnum.default_key])
+                       SME.to_text(SME.get_default()))
 method_fld = OptionMenu(main_window, method_var,
-                        *SortMethodEnum.values.values())
+                        *SME.values().values())
 
 conflict_lbl = Label(main_window, text=_('Conflict resolving method'),
                      width=LABEL_WIDTH, anchor=E, justify=RIGHT)
 conflict_var = StringVar(
     main_window,
-    ConflictResolveMethodEnum.values[ConflictResolveMethodEnum.default_key])
+    CRE.to_text(CRE.get_default()))
 conflict_fld = OptionMenu(main_window, conflict_var,
-                          *ConflictResolveMethodEnum.values.values())
+                          *CRE.values().values())
 
 cleanup_lbl = Label(main_window, text=_('Remove empty folders from source'),
                     width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-cleanup_var = IntVar(main_window, FolderCleanupOptionsEnum.default_key)
+cleanup_var = IntVar(main_window, FCE.get_default().value)
 cleanup_fld = Checkbutton(main_window, variable=cleanup_var,
-                          offvalue=FolderCleanupOptionsEnum.LEAVE,
-                          onvalue=FolderCleanupOptionsEnum.REMOVE)
+                          offvalue=FCE.LEAVE.value,
+                          onvalue=FCE.REMOVE.value)
 
 main_btn = Button(main_window, text=_('Sort'))
 
