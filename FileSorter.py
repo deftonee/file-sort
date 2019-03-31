@@ -9,7 +9,7 @@ from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
-from main import sort, validate_paths
+from main import Sorter
 from enums import CRE, FCE, SME
 from tag_classes import TAG_HELP
 
@@ -92,11 +92,8 @@ def sort_button_pressed(event):
     crm = CRE.to_value(conflict_var.get())
     co = FCE(cleanup_var.get())
 
-    def _sorting_thread_body():
-        for is_done, file_name in sort(
-                src_path=src_path, dst_path=dst_path, path_format=fmt,
-                method=sm, conflict_resolve_method=crm, cleanup_option=co
-        ):
+    def _sorting_thread_body(sorter):
+        for is_done, file_name in sorter.sort():
             try:
                 result_pgb.step(1)
                 if is_done:
@@ -124,13 +121,16 @@ def sort_button_pressed(event):
     src_path = src_fld.get()
     dst_path = dst_fld.get()
     fmt = fmt_fld.get()
-    is_valid, msg = validate_paths(src_path=src_path, dst_path=dst_path)
+    sorter = Sorter(src_path=src_path, dst_path=dst_path, path_format=fmt,
+                    method=sm, conflict_resolve_method=crm, cleanup_option=co)
+    is_valid, msg = sorter.validate_paths()
     if not is_valid:
         messagebox.showerror(
             title=_('Validation error'),
             message=msg,
         )
     else:
+        # FIXME in some cases counts in wrong way
         total = 0
         for x in os.walk(src_path):
             total += len(x[2])
@@ -160,20 +160,21 @@ def sort_button_pressed(event):
         failed_lst.pack(fill=BOTH)
 
         # start sorting
-        sorting_thread = threading.Thread(target=_sorting_thread_body)
+        sorting_thread = threading.Thread(
+            target=lambda: _sorting_thread_body(sorter))
         sorting_thread.start()
 
         # update settings
         if src_path not in settings[SRC_SETTINGS_KEY]:
-            settings[SRC_SETTINGS_KEY].append(src_path)
+            settings[SRC_SETTINGS_KEY].insert(0, src_path)
             src_fld.config(values=get_src_choices())
 
         if dst_path not in settings[DST_SETTINGS_KEY]:
-            settings[DST_SETTINGS_KEY].append(dst_path)
+            settings[DST_SETTINGS_KEY].insert(0, dst_path)
             dst_fld.config(values=get_dst_choices())
 
         if fmt not in settings[FMT_SETTINGS_KEY]:
-            settings[FMT_SETTINGS_KEY].append(fmt)
+            settings[FMT_SETTINGS_KEY].insert(0, fmt)
             fmt_fld.config(values=get_fmt_choices())
 
         save_settings()

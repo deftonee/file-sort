@@ -5,7 +5,7 @@ import sys
 
 from gettext import gettext as _
 
-from main import sort, validate_paths
+from main import Sorter
 from enums import SME, CRE, FCE
 from tag_classes import TAG_HELP
 
@@ -65,14 +65,13 @@ try:
 
     i = 0.0
 
-    is_valid, msg = validate_paths(src_path=args.src_path,
-                                   dst_path=args.dst_path)
+    sorter = Sorter(src_path=args.src_path, dst_path=args.dst_path,
+                    path_format=args.path_format, method=sm,
+                    conflict_resolve_method=crm, cleanup_option=co)
+    is_valid, msg = sorter.validate_paths()
 
     if is_valid:
-        for is_done, file_name in sort(
-                src_path=args.src_path, dst_path=args.dst_path,
-                path_format=args.path_format, method=sm,
-                conflict_resolve_method=crm, cleanup_option=co):
+        for is_done, file_name in sorter.sort():
             i += delta
 
             # erase last line
