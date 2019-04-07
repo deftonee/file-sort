@@ -1,6 +1,6 @@
-**File (mostly picture) sorting script / UI application**
+#### File (mostly picture) sorting script / UI application
 
-Runs on Windows, Linux, macOS
+Runs on macOS, Linux, Windows. Python 3.6+ needed.
 
 To run sources on Linux:
 ```
@@ -24,5 +24,18 @@ rm -rf build dist
 .virtualenv/bin/python setup.py py2app
 ```
 
-
+```
+# TODO list:
+    - make language select possibility. 
+        UI need to be reloaded after language change
+    - do visual path format constructing maybe
+    - make an app for windows, macOS, linux. make instructions
+    - make instructions to run on windows
+    - make option for considering hidden files
+    - make option about what date to consider when sorting: 
+        file created, photo shot
+    - more information in process output logs for user. maybe not
+    - do something with TODOs in code
+    - write some tests maybe
+```
 Icon made by Creaticca Creative Agency from www.flaticon.com is licensed by CC 3.0 BY

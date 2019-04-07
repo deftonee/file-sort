@@ -5,8 +5,9 @@ import sys
 
 from gettext import gettext as _
 
+from enums import (
+    SortMethodEnum, ConflictResolveMethodEnum, FolderCleanupOptionsEnum)
 from main import Sorter
-from enums import SME, CRE, FCE
 from tag_classes import TAG_HELP
 
 # progress bar constants
@@ -42,21 +43,21 @@ args = parser.parse_args()
 
 try:
     if args.move:
-        sm = SME.MOVE
+        sm = SortMethodEnum.MOVE
     else:
-        sm = SME.COPY
+        sm = SortMethodEnum.COPY
 
     if args.replace:
-        crm = CRE.REPLACE
+        crm = ConflictResolveMethodEnum.REPLACE
     elif args.do_nothing:
-        crm = CRE.DO_NOTHING
+        crm = ConflictResolveMethodEnum.DO_NOTHING
     else:
-        crm = CRE.SAVE_ALL
+        crm = ConflictResolveMethodEnum.SAVE_ALL
 
     if args.dispose_folders:
-        co = FCE.REMOVE
+        co = FolderCleanupOptionsEnum.REMOVE
     else:
-        co = FCE.LEAVE
+        co = FolderCleanupOptionsEnum.LEAVE
 
     total = 0
     for x in os.walk(args.src_path):

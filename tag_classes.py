@@ -1,8 +1,8 @@
 from gettext import gettext as _
 
-from enums import CTE
+from enums import ContentTypesEnum
 from file_classes import File
-from tag_processor import TagProcessor, DEFAULT_FOLDER_NAME
+from helpers import TagProcessor, DEFAULT_FOLDER_NAME
 
 
 class Tag:
@@ -20,10 +20,10 @@ class ContentTypeTag(Tag):
     help = _('Content type name of file (Images, Videos, ...)')
 
     folder_names = {
-        CTE.IMAGE: _('Images'),
-        CTE.VIDEO: _('Videos'),
-        CTE.AUDIO: _('Audios'),
-        CTE.TEXT: _('Documents'),
+        ContentTypesEnum.IMAGE: _('Images'),
+        ContentTypesEnum.VIDEO: _('Videos'),
+        ContentTypesEnum.AUDIO: _('Audios'),
+        ContentTypesEnum.TEXT: _('Documents'),
     }
 
     @classmethod

@@ -1,15 +1,15 @@
 import logging
 import os
 import re
-import shutil
 import traceback
 
 from typing import Tuple, Iterator, Text, List, Set
 from gettext import gettext as _
 
-from enums import SME, FCE, CRE, CTE
-from helpers import set_locale
-from tag_processor import TagProcessor
+from enums import (
+    SortMethodEnum, FolderCleanupOptionsEnum, ContentTypesEnum,
+    ConflictResolveMethodEnum)
+from helpers import set_locale, TagProcessor
 
 try:
     import magic
@@ -27,8 +27,9 @@ TAG_PATTERN = '%[a-zA-Z]'
 
 class Sorter:
     def __init__(self, src_path: str, dst_path: str, path_format: str,
-                 method: SME, conflict_resolve_method: CRE,
-                 cleanup_option: FCE):
+                 method: SortMethodEnum,
+                 conflict_resolve_method: ConflictResolveMethodEnum,
+                 cleanup_option: FolderCleanupOptionsEnum):
         self.src_path = src_path
         self.dst_path = dst_path
         self.method = method
@@ -65,7 +66,7 @@ class Sorter:
             if os.path.isfile(current_path):
                 try:
                     self._process_file(current_path)
-                except Exception as e:
+                except Exception as e:  # TODO specify kinds of error
                     logging.error(traceback.format_exc())
                     yield False, current_path
                 else:
@@ -79,10 +80,10 @@ class Sorter:
         # defining type of file
         if magic is not None:
             mime_info = magic.from_file(file_path, mime=True) or ''
-            file_type = CTE(mime_info.split('/')[0])
+            file_type = ContentTypesEnum(mime_info.split('/')[0])
         else:
             file_type = ''
-        cls = CTE.get_class(file_type)
+        cls = ContentTypesEnum.get_class(file_type)
         file_obj = cls(file_path, file_type)
 
         # constructing file's new path
@@ -94,37 +95,18 @@ class Sorter:
 
         new_file_dir = os.path.join(*new_path_parts)
 
-        file_name, file_ext = os.path.splitext(os.path.basename(file_path))
-
-        new_file_path = os.path.join(
-            new_file_dir,
-            '%s%s' % (file_name, file_ext))
-
         if not os.path.exists(new_file_dir):
             os.makedirs(new_file_dir)
 
         # resolving conflict if file already exists
-        if os.path.exists(new_file_path):
-            if self.conflict_resolve_method == CRE.REPLACE:
-                os.remove(new_file_path)
-            elif self.conflict_resolve_method == CRE.SAVE_ALL:
-                i = 2
-                while os.path.exists(new_file_path):
-                    new_file_path = os.path.join(
-                        new_file_dir,
-                        '%s (%s)%s' % (file_name, i, file_ext))
-                    i += 1
-            elif self.conflict_resolve_method == CRE.DO_NOTHING:
-                return
+        handler = ConflictResolveMethodEnum.handlers()[
+            self.conflict_resolve_method]
+        handler(file_path, new_file_dir)
 
         # doing main job
-        if self.method == SME.COPY:
-            shutil.copy2(file_path, new_file_dir)
-        elif self.method == SME.MOVE:
-            shutil.move(file_path, new_file_dir, shutil.copy2)
+        handler = SortMethodEnum.handlers()[self.method]
+        handler(file_path, new_file_dir)
 
         # delete empty old folder if needed
-        if self.cleanup_option == FCE.REMOVE:
-            old_file_dir = os.path.dirname(file_path)
-            if not os.listdir(old_file_dir):
-                os.rmdir(old_file_dir)
+        handler = FolderCleanupOptionsEnum.handlers()[self.cleanup_option]
+        handler(file_path, new_file_dir)

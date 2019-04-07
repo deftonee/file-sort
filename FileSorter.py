@@ -9,8 +9,9 @@ from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
+from enums import (
+    ConflictResolveMethodEnum, FolderCleanupOptionsEnum, SortMethodEnum)
 from main import Sorter
-from enums import CRE, FCE, SME
 from tag_classes import TAG_HELP
 
 
@@ -88,9 +89,9 @@ def sort_button_pressed(event):
         del result_window
         result_window = None
 
-    sm = SME.to_value(method_var.get())
-    crm = CRE.to_value(conflict_var.get())
-    co = FCE(cleanup_var.get())
+    sm = SortMethodEnum.to_value(method_var.get())
+    crm = ConflictResolveMethodEnum.to_value(conflict_var.get())
+    co = FolderCleanupOptionsEnum(cleanup_var.get())
 
     def _sorting_thread_body(sorter):
         for is_done, file_name in sorter.sort():
@@ -222,24 +223,24 @@ fmt_btn = Button(main_window, text=_('?'), width=BUTTON_WIDTH)
 method_lbl = Label(main_window, text=_('Sorting method'),
                    width=LABEL_WIDTH, anchor=E, justify=RIGHT)
 method_var = StringVar(main_window,
-                       SME.to_text(SME.get_default()))
+                       SortMethodEnum.to_text(SortMethodEnum.get_default()))
 method_fld = OptionMenu(main_window, method_var,
-                        *SME.values().values())
+                        *SortMethodEnum.values().values())
 
 conflict_lbl = Label(main_window, text=_('Conflict resolving method'),
                      width=LABEL_WIDTH, anchor=E, justify=RIGHT)
 conflict_var = StringVar(
     main_window,
-    CRE.to_text(CRE.get_default()))
+    ConflictResolveMethodEnum.to_text(ConflictResolveMethodEnum.get_default()))
 conflict_fld = OptionMenu(main_window, conflict_var,
-                          *CRE.values().values())
+                          *ConflictResolveMethodEnum.values().values())
 
 cleanup_lbl = Label(main_window, text=_('Remove empty folders from source'),
                     width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-cleanup_var = IntVar(main_window, FCE.get_default().value)
+cleanup_var = IntVar(main_window, FolderCleanupOptionsEnum.get_default().value)
 cleanup_fld = Checkbutton(main_window, variable=cleanup_var,
-                          offvalue=FCE.LEAVE.value,
-                          onvalue=FCE.REMOVE.value)
+                          offvalue=FolderCleanupOptionsEnum.LEAVE.value,
+                          onvalue=FolderCleanupOptionsEnum.REMOVE.value)
 
 main_btn = Button(main_window, text=_('Sort'))
 
