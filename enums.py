@@ -181,13 +181,16 @@ class ContentTypesEnum(MyEnum):
 
     IMAGE = 'image'
     VIDEO = 'video'
-    APPLICATION = 'application'
     AUDIO = 'audio'
-    EXAMPLE = 'example'
-    MESSAGE = 'message'
-    MODEL = 'model'
-    MULTIPART = 'multipart'
     TEXT = 'text'
+    UNKNOWN = 'unknown'
+
+    # not used ones
+    # APPLICATION = 'application'
+    # EXAMPLE = 'example'
+    # MESSAGE = 'message'
+    # MODEL = 'model'
+    # MULTIPART = 'multipart'
 
     @classmethod
     def get_class(cls, value):
@@ -195,3 +198,7 @@ class ContentTypesEnum(MyEnum):
             ContentTypesEnum.IMAGE: ImageFile,
         }
         return classes.get(value, File)
+
+    @classmethod
+    def get_default(cls) -> Enum:
+        return ContentTypesEnum.UNKNOWN

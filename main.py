@@ -80,7 +80,10 @@ class Sorter:
         # defining type of file
         if magic is not None:
             mime_info = magic.from_file(file_path, mime=True) or ''
-            file_type = ContentTypesEnum(mime_info.split('/')[0])
+            try:
+                file_type = ContentTypesEnum(mime_info.split('/')[0])
+            except ValueError:
+                file_type = ContentTypesEnum.get_default()
         else:
             file_type = ''
         cls = ContentTypesEnum.get_class(file_type)
