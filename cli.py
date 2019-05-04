@@ -8,7 +8,7 @@ from gettext import gettext as _
 from enums import (
     SortMethodEnum, ConflictResolveMethodEnum, FolderCleanupOptionsEnum)
 from main import Sorter
-from tag_classes import TAG_HELP
+from tag_classes import get_tag_help
 
 # progress bar constants
 PGB_WIDTH = 40
@@ -17,7 +17,7 @@ PGB_ON_CHAR = '#'
 PGB_OFF_CHAR = ' '
 PGB_FULL_WIDTH = len(PGB_TEMPLATE % (PGB_OFF_CHAR * PGB_WIDTH))
 
-parser = argparse.ArgumentParser(epilog=TAG_HELP)
+parser = argparse.ArgumentParser(epilog=get_tag_help())
 
 parser.add_argument('src_path', type=str,
                     help=_('Source folder'))

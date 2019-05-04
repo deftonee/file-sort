@@ -18,16 +18,9 @@ virtualenv -p python3 .virtualenv
 .virtualenv/bin/python FileSorter.py
 ```
 
-Assembling application for macOS:
-```
-rm -rf build dist
-.virtualenv/bin/python setup.py py2app
-```
-
 ```
 # TODO list:
-    - make language select possibility. 
-        UI need to be reloaded after language change
+    - make language select possibility for cli        
     - do visual path format constructing maybe
     - make an app for windows, macOS, linux. make instructions
     - make instructions to run on windows

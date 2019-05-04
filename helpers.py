@@ -5,21 +5,26 @@ import sys
 import traceback
 
 from gettext import bindtextdomain
-from typing import Text, Set
+from typing import Text, Set, Optional
 
-from enums import DEFAULT_FOLDER_NAME
+from enums import LangEnum
 from file_classes import File
 
 
-def set_locale():
+def set_locale(predefined: Optional[LangEnum] = None):
     """ Set language for text translation """
-    try:
-        # TODO maybe use command line tools
-        #  like "defaults read -g AppleLanguages"
-        code, encoding = locale.getdefaultlocale()
-    except ValueError:
-        logging.error(traceback.format_exc())
+    code, encoding = None, None
+    if predefined is not None:
+        code, encoding = LangEnum.codes()[predefined]
     else:
+        try:
+            # TODO maybe use command line tools
+            #  like "defaults read -g AppleLanguages"
+            code, encoding = locale.getdefaultlocale()
+        except ValueError:
+            logging.error(traceback.format_exc())
+
+    if code is not None:
         old_code, old_encoding = locale.getlocale()
         logging.info(f'Locale was code={old_code}, encoding={old_encoding}')
         logging.info(f'Locale will be code={code}, encoding={encoding}')
@@ -53,10 +58,14 @@ class TagProcessor:
                 replacement = cls.tag_classes[tag].process(file_obj)
                 result = result.replace(tag, replacement)
             else:
-                result = DEFAULT_FOLDER_NAME
+                result = get_default_folder_name()
                 break
         return result
 
     @classmethod
     def add_tag_class(cls, tag_cls):
         cls.tag_classes[tag_cls.tag] = tag_cls
+
+
+def get_default_folder_name():
+    return _('Others')

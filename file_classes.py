@@ -20,6 +20,7 @@ class File:
             return datetime.fromtimestamp(os.path.getmtime(self.path))
         elif os.path.getctime(self.path):
             return datetime.fromtimestamp(os.path.getctime(self.path))
+        return datetime.min
 
 
 class ImageFile(File):

@@ -2,13 +2,16 @@ from gettext import gettext as _
 
 from enums import ContentTypesEnum
 from file_classes import File
-from helpers import TagProcessor, DEFAULT_FOLDER_NAME
+from helpers import TagProcessor, get_default_folder_name
 
 
 class Tag:
     """ Thing that know how to get information from file by specific tag """
     tag = ''
-    help = ''
+
+    @staticmethod
+    def help_str():
+        return ''
 
     @classmethod
     def process(cls, file_obj: File) -> str:
@@ -17,7 +20,10 @@ class Tag:
 
 class ContentTypeTag(Tag):
     tag = '%T'
-    help = _('Content type name of file (Images, Videos, ...)')
+
+    @staticmethod
+    def help_str():
+        return _('Content type name of file (Images, Videos, ...)')
 
     folder_names = {
         ContentTypesEnum.IMAGE: _('Images'),
@@ -28,15 +34,19 @@ class ContentTypeTag(Tag):
 
     @classmethod
     def process(cls, file_obj: File) -> str:
-
-        return cls.folder_names.get(
-            file_obj.content_type,
-            DEFAULT_FOLDER_NAME)
+        if file_obj.content_type in cls.folder_names:
+            result = cls.folder_names[file_obj.content_type]
+        else:
+            result = get_default_folder_name()
+        return result
 
 
 class ExtensionTag(Tag):
     tag = '%E'
-    help = _('Extension of file (jpg, png, doc, avi, ...)')
+
+    @staticmethod
+    def help_str():
+        return _('Extension of file (jpg, png, doc, avi, ...)')
 
     @classmethod
     def process(cls, file_obj: File) -> str:
@@ -51,77 +61,122 @@ class DateTimeTag(Tag):
 
 class YearTag(DateTimeTag):
     tag = '%Y'
-    help = _('Year with century as a decimal number')
+
+    @staticmethod
+    def help_str():
+        return _('Year with century as a decimal number')
 
 
 class DecimalMonthTag(DateTimeTag):
     tag = '%m'
-    help = _('Month as a decimal number [01,12]')
+
+    @staticmethod
+    def help_str():
+        return _('Month as a decimal number [01,12]')
 
 
 class DayTag(DateTimeTag):
     tag = '%d'
-    help = _('Day of the month as a decimal number [01,31]')
+
+    @staticmethod
+    def help_str():
+        return _('Day of the month as a decimal number [01,31]')
 
 
 class HourTag(DateTimeTag):
     tag = '%H'
-    help = _('Hour (24-hour clock) as a decimal number [00,23]')
+
+    @staticmethod
+    def help_str():
+        return _('Hour (24-hour clock) as a decimal number [00,23]')
 
 
 class MinuteTag(DateTimeTag):
     tag = '%M'
-    help = _('Minute as a decimal number [00,59]')
+
+    @staticmethod
+    def help_str():
+        return _('Minute as a decimal number [00,59]')
 
 
 class SecondTag(DateTimeTag):
     tag = '%S'
-    help = _('Second as a decimal number [00,61]')
+
+    @staticmethod
+    def help_str():
+        return _('Second as a decimal number [00,61]')
 
 
 class TimeZoneTag(DateTimeTag):
     tag = '%z'
-    help = _('Time zone offset from UTC')
+
+    @staticmethod
+    def help_str():
+        return _('Time zone offset from UTC')
 
 
 class WeekDayTag(DateTimeTag):
     tag = '%a'
-    help = _("Locale's abbreviated weekday name")
+
+    @staticmethod
+    def help_str():
+        return _("Locale's abbreviated weekday name")
 
 
 class FullWeekDayTag(DateTimeTag):
     tag = '%A'
-    help = _("Locale's full weekday name")
+
+    @staticmethod
+    def help_str():
+        return _("Locale's full weekday name")
 
 
 class AbbrMonthTag(DateTimeTag):
     tag = '%b'
-    help = _("Locale's abbreviated month name")
+
+    @staticmethod
+    def help_str():
+        return _("Locale's abbreviated month name")
 
 
 class MonthTag(DateTimeTag):
     tag = '%B'
-    help = _("Locale's full month name")
+
+    @staticmethod
+    def help_str():
+        return _("Locale's full month name")
 
 
 class DateTimeReprTag(DateTimeTag):
     tag = '%c'
-    help = _("Locale's appropriate date and time representation")
+
+    @staticmethod
+    def help_str():
+        return _("Locale's appropriate date and time representation")
 
 
 class Hour12Tag(DateTimeTag):
     tag = '%I'
-    help = _('Hour (12-hour clock) as a decimal number [01,12]')
+
+    @staticmethod
+    def help_str():
+        return _('Hour (12-hour clock) as a decimal number [01,12]')
 
 
 class DayPartTag(DateTimeTag):
     tag = '%p'
-    help = _("Locale's equivalent of either AM or PM")
+
+    @staticmethod
+    def help_str():
+        return _("Locale's equivalent of either AM or PM")
 
 
 class CapitalRomanMonthTag(DateTimeTag):
     tag = '%r'
-    help = _("Month as a small roman number [ⅰ,ⅻ]")
+
+    @staticmethod
+    def help_str():
+        return _("Month as a small roman number [ⅰ,ⅻ]")
 
     ROMAN_NUMBERS = {
         1: 'Ⅰ', 2: 'Ⅱ', 3: 'Ⅲ', 4: 'Ⅳ',
@@ -136,7 +191,10 @@ class CapitalRomanMonthTag(DateTimeTag):
 
 class SmallRomanMonthTag(DateTimeTag):
     tag = '%R'
-    help = _("Month as a capital roman number [Ⅰ,Ⅻ]")
+
+    @staticmethod
+    def help_str():
+        return _("Month as a capital roman number [Ⅰ,Ⅻ]")
 
     SMALL_ROMAN_NUMBERS = {
         1: 'ⅰ', 2: 'ⅱ', 3: 'ⅲ', 4: 'ⅳ',
@@ -151,7 +209,10 @@ class SmallRomanMonthTag(DateTimeTag):
 
 class NumberInCircleMonthTag(DateTimeTag):
     tag = '%C'
-    help = _("Month as number in circle [①,⑫]")
+
+    @staticmethod
+    def help_str():
+        return _("Month as number in circle [①,⑫]")
 
     NUMBERS_IN_CIRCLES = {
         1: '①', 2: '②', 3: '③', 4: '④',
@@ -189,16 +250,17 @@ classes = (
 for x in classes:
     TagProcessor.add_tag_class(x)
 
-SEPARATOR_HELP = _('''/  - Folder structure separator''')
 
-EXAMPLE_HELP = _('''Format example: %T/%Y/%m%B - %d
-Path example for this format: Images/2017/05May - 02/''')
+def get_tag_help():
+    separator_help = _('''/  - Folder structure separator''')
 
-TAG_HELP = '\n'.join((
-    SEPARATOR_HELP,
-    '\n',
-    *(f'{c.tag} - {c.help}' for c in classes),
-    '\n',
-    EXAMPLE_HELP,
-))
+    example_help = _('''Format example: %T/%Y/%m%B - %d
+    Path example for this format: Images/2017/05May - 02/''')
 
+    return '\n'.join((
+        separator_help,
+        '\n',
+        *(f'{c.tag} - {c.help_str()}' for c in classes),
+        '\n',
+        example_help,
+    ))

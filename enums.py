@@ -1,13 +1,13 @@
+from __future__ import annotations
+
 import os
 import shutil
+
 from enum import Enum
 from gettext import gettext as _
 from typing import Dict, Callable
 
 from file_classes import ImageFile, File
-
-
-DEFAULT_FOLDER_NAME = _('Others')
 
 
 class MyEnum(Enum):
@@ -22,14 +22,13 @@ class MyEnum(Enum):
 
     @classmethod
     def to_text(cls, value: Enum) -> str:
-        return cls.values().get(value)
+        return cls.values().get(value, '')
 
     @classmethod
     def to_value(cls, text: str) -> Enum:
         return next(
             (k for k, v in cls.values().items() if v == text),
-            cls.get_default()
-        )
+            cls.get_default())
 
 
 class EnumWithAction(MyEnum):
@@ -44,18 +43,18 @@ class SortMethodEnum(EnumWithAction):
     MOVE = 2
 
     @classmethod
-    def values(cls) -> Dict[Enum, str]:
+    def values(cls) -> Dict[SortMethodEnum, str]:
         return {
             SortMethodEnum.COPY: _('Copy'),
             SortMethodEnum.MOVE: _('Move'),
         }
 
     @classmethod
-    def get_default(cls) -> Enum:
+    def get_default(cls) -> SortMethodEnum:
         return SortMethodEnum.COPY
 
     @classmethod
-    def handlers(cls) -> Dict[Enum, Callable]:
+    def handlers(cls) -> Dict[SortMethodEnum, Callable]:
         return {
             SortMethodEnum.COPY: cls.copy_handler,
             SortMethodEnum.MOVE: cls.move_handler,
@@ -77,7 +76,7 @@ class ConflictResolveMethodEnum(EnumWithAction):
     DO_NOTHING = 3
 
     @classmethod
-    def values(cls) -> Dict[Enum, str]:
+    def values(cls) -> Dict[ConflictResolveMethodEnum, str]:
         return {
             ConflictResolveMethodEnum.REPLACE:
                 _('Replace'),
@@ -88,11 +87,11 @@ class ConflictResolveMethodEnum(EnumWithAction):
         }
 
     @classmethod
-    def get_default(cls) -> Enum:
+    def get_default(cls) -> ConflictResolveMethodEnum:
         return ConflictResolveMethodEnum.SAVE_ALL
 
     @classmethod
-    def handlers(cls) -> Dict[Enum, Callable]:
+    def handlers(cls) -> Dict[ConflictResolveMethodEnum, Callable]:
         return {
             ConflictResolveMethodEnum.REPLACE: cls.replace_handler,
             ConflictResolveMethodEnum.SAVE_ALL: cls.save_all_handler,
@@ -136,18 +135,18 @@ class FolderCleanupOptionsEnum(EnumWithAction):
     LEAVE = 2
 
     @classmethod
-    def values(cls) -> Dict[Enum, str]:
+    def values(cls) -> Dict[FolderCleanupOptionsEnum, str]:
         return {
             FolderCleanupOptionsEnum.REMOVE: _('Remove'),
             FolderCleanupOptionsEnum.LEAVE: _('Leave'),
         }
 
     @classmethod
-    def get_default(cls) -> Enum:
+    def get_default(cls) -> FolderCleanupOptionsEnum:
         return FolderCleanupOptionsEnum.REMOVE
 
     @classmethod
-    def handlers(cls) -> Dict[Enum, Callable]:
+    def handlers(cls) -> Dict[FolderCleanupOptionsEnum, Callable]:
         return {
             FolderCleanupOptionsEnum.REMOVE: cls.remove_handler,
             FolderCleanupOptionsEnum.LEAVE: lambda _cls: None,
@@ -166,14 +165,14 @@ class HiddenOptionEnum(EnumWithAction):
     NO = 2
 
     @classmethod
-    def values(cls) -> Dict[Enum, str]:
+    def values(cls) -> Dict[HiddenOptionEnum, str]:
         return {
             HiddenOptionEnum.YES: _('Process hidden objects'),
             HiddenOptionEnum.NO: _('Not process hidden objects'),
         }
 
     @classmethod
-    def get_default(cls) -> Enum:
+    def get_default(cls) -> HiddenOptionEnum:
         return HiddenOptionEnum.YES
 
 
@@ -200,5 +199,28 @@ class ContentTypesEnum(MyEnum):
         return classes.get(value, File)
 
     @classmethod
-    def get_default(cls) -> Enum:
+    def get_default(cls) -> ContentTypesEnum:
         return ContentTypesEnum.UNKNOWN
+
+
+class LangEnum(MyEnum):
+    EN = 'en_US'
+    RU = 'ru_RU'
+
+    @classmethod
+    def values(cls) -> Dict[LangEnum, str]:
+        return {
+            LangEnum.EN: 'English',
+            LangEnum.RU: 'Русский',
+        }
+
+    @classmethod
+    def get_default(cls) -> LangEnum:
+        return LangEnum.EN
+
+    @classmethod
+    def codes(cls):
+        return {
+            LangEnum.EN: (LangEnum.EN.value, 'UTF-8'),
+            LangEnum.RU: (LangEnum.RU.value, 'UTF-8'),
+        }

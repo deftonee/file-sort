@@ -9,7 +9,8 @@ from gettext import gettext as _
 from enums import (
     SortMethodEnum, FolderCleanupOptionsEnum, ContentTypesEnum,
     ConflictResolveMethodEnum)
-from helpers import set_locale, TagProcessor
+from helpers import TagProcessor
+
 
 try:
     import magic
@@ -17,8 +18,6 @@ except ImportError:
     magic = None
 
 logging.basicConfig(filename="log.log", level=logging.INFO)
-
-set_locale()
 
 # constants
 PATH_DELIMITER = '/'

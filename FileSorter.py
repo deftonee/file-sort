@@ -1,4 +1,4 @@
-import json
+import locale
 import os
 import threading
 
@@ -10,135 +10,163 @@ from tkinter.scrolledtext import ScrolledText
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
 from enums import (
-    ConflictResolveMethodEnum, FolderCleanupOptionsEnum, SortMethodEnum)
+    ConflictResolveMethodEnum, FolderCleanupOptionsEnum, SortMethodEnum,
+    LangEnum)
+from helpers import set_locale
 from main import Sorter
-from tag_classes import TAG_HELP
+from settings import Settings, SettingEnum
+from tag_classes import get_tag_help
 
 
 LABEL_WIDTH = 25
 FIELD_WIDTH = 25
 BUTTON_WIDTH = 5
 PROGRESSBAR_LENGTH = 200
-SETTINGS_FILENAME = 'settings.json'
-SRC_SETTINGS_KEY = 'src'
-DST_SETTINGS_KEY = 'dst'
-FMT_SETTINGS_KEY = 'fmt'
+
+
+settings = Settings(os.path.dirname(__file__))
+
+# set language
+lang = settings.get(SettingEnum.LNG)
+if lang:
+    lang = LangEnum(lang)
+set_locale(lang)
 
 
 class UI:
     def __init__(self):
+        self.main_window = Tk()
+        self._initialize()
 
-        # load settings, savings
-        self.settings_path = os.path.join(os.path.dirname(__file__),
-                                          SETTINGS_FILENAME)
-        try:
-            settings_file = open(self.settings_path, 'r')
-            self.settings = json.load(settings_file)
-            settings_file.close()
-        except (FileNotFoundError, json.decoder.JSONDecodeError):
-            self.settings = {}
-
-        main_window = Tk()
-        main_window.title(_('File Sorter'))
-        main_window.wm_geometry("")
-        main_window.wm_resizable(width=False, height=False)
-        main_window.protocol("WM_DELETE_WINDOW", self._close_main_window)
-
-        src_lbl = Label(main_window, text=_('Source folder'),
-                        width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.src_fld = Combobox(main_window, values=self._get_src_choices(),
-                                width=FIELD_WIDTH)
-        self.src_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
-
-        dst_lbl = Label(main_window, text=_('Destination folder'),
-                        width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.dst_fld = Combobox(main_window, values=self._get_dst_choices(),
-                                width=FIELD_WIDTH)
-        self.dst_btn = Button(main_window, text=_('View'), width=BUTTON_WIDTH)
-
-        fmt_lbl = Label(main_window, text=_('Folder structure format'),
-                        width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.fmt_fld = Combobox(main_window, values=self._get_fmt_choices(),
-                                width=FIELD_WIDTH)
-        self.fmt_btn = Button(main_window, text=_('?'), width=BUTTON_WIDTH)
-
-        method_lbl = Label(main_window, text=_('Sorting method'),
-                           width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.method_var = StringVar(
-            main_window,
-            SortMethodEnum.to_text(SortMethodEnum.get_default()))
-        self.method_fld = OptionMenu(main_window,
-                                     self.method_var,
-                                     *SortMethodEnum.values().values())
-
-        conflict_lbl = Label(main_window, text=_('Conflict resolving method'),
-                             width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.conflict_var = StringVar(
-            main_window,
-            ConflictResolveMethodEnum.to_text(
-                ConflictResolveMethodEnum.get_default()))
-        self.conflict_fld = OptionMenu(
-            main_window,
-            self.conflict_var,
-            *ConflictResolveMethodEnum.values().values())
-
-        cleanup_lbl = Label(main_window,
-                            text=_('Remove empty folders from source'),
-                            width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.cleanup_var = IntVar(main_window,
-                                  FolderCleanupOptionsEnum.get_default().value)
-        self.cleanup_fld = Checkbutton(
-            main_window, variable=self.cleanup_var,
-            offvalue=FolderCleanupOptionsEnum.LEAVE.value,
-            onvalue=FolderCleanupOptionsEnum.REMOVE.value)
-
-        self.main_btn = Button(main_window, text=_('Sort'))
-
-        src_lbl.grid(row=0, column=0)
-        self.src_fld.grid(row=0, column=1, sticky=E + W)
-        self.src_btn.grid(row=0, column=2)
-
-        dst_lbl.grid(row=1, column=0)
-        self.dst_fld.grid(row=1, column=1, sticky=E + W)
-        self.dst_btn.grid(row=1, column=2)
-
-        fmt_lbl.grid(row=2, column=0)
-        self.fmt_fld.grid(row=2, column=1, sticky=E + W)
-        self.fmt_btn.grid(row=2, column=2)
-
-        method_lbl.grid(row=3, column=0)
-        self.method_fld.grid(row=3, column=1, sticky=E + W)
-
-        conflict_lbl.grid(row=4, column=0)
-        self.conflict_fld.grid(row=4, column=1, sticky=E + W)
-
-        cleanup_lbl.grid(row=5, column=0)
-        self.cleanup_fld.grid(row=5, column=1, sticky=E + W)
-
-        self.main_btn.grid(row=6, column=1)
-
-        self.src_btn.bind(
-            '<Button-1>',
-            self._open_folder_dialog(
-                self.src_fld, _('Select source folder of your files'))
-        )
-        self.dst_btn.bind(
-            '<Button-1>',
-            self._open_folder_dialog(
-                self.dst_fld, _('Select destination folder of your files'))
-        )
-        self.fmt_btn.bind(
-            '<Button-1>',
-            self._show_format_help
-        )
-        self.main_btn.bind(
-            '<Button-1>',
-            self._sort_button_pressed
-        )
+    def _initialize(self):
+        self._create_main_window()
+        self._place_widgets()
+        self._bind_handlers()
 
         # links to additional windows
         self.format_help_window = None
         self.result_window = None
+
+    def _create_main_window(self):
+        self.main_window.title(_('File Sorter'))
+        self.main_window.wm_geometry("")
+        self.main_window.wm_resizable(width=False, height=False)
+        self.main_window.protocol("WM_DELETE_WINDOW", self._close_main_window)
+
+        self.src_lbl = Label(self.main_window, text=_('Source folder'),
+                             width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+        self.src_fld = Combobox(self.main_window,
+                                values=settings.get(SettingEnum.SRC, ()),
+                                width=FIELD_WIDTH)
+        self.src_btn = Button(self.main_window,
+                              text=_('View'), width=BUTTON_WIDTH)
+
+        self.dst_lbl = Label(self.main_window, text=_('Destination folder'),
+                             width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+        self.dst_fld = Combobox(self.main_window,
+                                values=settings.get(SettingEnum.DST, ()),
+                                width=FIELD_WIDTH)
+        self.dst_btn = Button(self.main_window,
+                              text=_('View'), width=BUTTON_WIDTH)
+
+        self.fmt_lbl = Label(self.main_window, text=_('Folder structure format'),
+                             width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+        self.fmt_fld = Combobox(self.main_window,
+                                values=settings.get(SettingEnum.FMT, ()),
+                                width=FIELD_WIDTH)
+        self.fmt_btn = Button(self.main_window,
+                              text=_('?'), width=BUTTON_WIDTH)
+
+        self.method_lbl = Label(self.main_window, text=_('Sorting method'),
+                                width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+        self.method_var = StringVar(
+            self.main_window,
+            SortMethodEnum.to_text(SortMethodEnum.get_default()))
+        self.method_fld = OptionMenu(self.main_window,
+                                     self.method_var,
+                                     *SortMethodEnum.values().values())
+
+        self.conflict_lbl = Label(self.main_window,
+                                  text=_('Conflict resolving method'),
+                                  width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+        self.conflict_var = StringVar(
+            self.main_window,
+            ConflictResolveMethodEnum.to_text(
+                ConflictResolveMethodEnum.get_default()))
+        self.conflict_fld = OptionMenu(
+            self.main_window,
+            self.conflict_var,
+            *ConflictResolveMethodEnum.values().values())
+
+        self.cleanup_lbl = Label(self.main_window,
+                                 text=_('Remove empty folders from source'),
+                                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+        self.cleanup_var = IntVar(self.main_window,
+                                  FolderCleanupOptionsEnum.get_default().value)
+        self.cleanup_fld = Checkbutton(
+            self.main_window, variable=self.cleanup_var,
+            offvalue=FolderCleanupOptionsEnum.LEAVE.value,
+            onvalue=FolderCleanupOptionsEnum.REMOVE.value)
+
+        locale_code, encoding = locale.getlocale()
+        try:
+            lang = LangEnum(locale_code)
+        except ValueError:
+            lang = None
+        self.lang_lbl = Label(self.main_window, text=_('Language'),
+                              width=LABEL_WIDTH, anchor=E, justify=RIGHT)
+        self.lang_var = StringVar(
+            self.main_window,
+            LangEnum.to_text(lang))
+        self.lang_fld = OptionMenu(self.main_window,
+                                   self.lang_var,
+                                   *LangEnum.values().values())
+
+        self.main_btn = Button(self.main_window, text=_('Sort'))
+
+    def _place_widgets(self):
+        self.src_lbl.grid(row=0, column=0)
+        self.src_fld.grid(row=0, column=1, sticky=E + W)
+        self.src_btn.grid(row=0, column=2)
+
+        self.dst_lbl.grid(row=1, column=0)
+        self.dst_fld.grid(row=1, column=1, sticky=E + W)
+        self.dst_btn.grid(row=1, column=2)
+
+        self.fmt_lbl.grid(row=2, column=0)
+        self.fmt_fld.grid(row=2, column=1, sticky=E + W)
+        self.fmt_btn.grid(row=2, column=2)
+
+        self.method_lbl.grid(row=3, column=0)
+        self.method_fld.grid(row=3, column=1, sticky=E + W)
+
+        self.conflict_lbl.grid(row=4, column=0)
+        self.conflict_fld.grid(row=4, column=1, sticky=E + W)
+
+        self.cleanup_lbl.grid(row=5, column=0)
+        self.cleanup_fld.grid(row=5, column=1, sticky=E + W)
+
+        self.lang_lbl.grid(row=6, column=0)
+        self.lang_fld.grid(row=6, column=1, sticky=E + W)
+
+        self.main_btn.grid(row=7, column=1)
+
+    def _bind_handlers(self):
+        self.src_btn.bind(
+            '<Button-1>',
+            self._open_folder_dialog(
+                self.src_fld, _('Select source folder of your files')))
+        self.dst_btn.bind(
+            '<Button-1>',
+            self._open_folder_dialog(
+                self.dst_fld, _('Select destination folder of your files')))
+        self.fmt_btn.bind(
+            '<Button-1>',
+            self._show_format_help)
+        self.main_btn.bind(
+            '<Button-1>',
+            self._sort_button_pressed)
+        self.lang_var.trace("w", self._language_changed)
 
     def run(self):
         mainloop()
@@ -169,13 +197,21 @@ class UI:
 
         msg = Message(
             self.format_help_window,
-            text=TAG_HELP)
+            text=get_tag_help())
         msg.pack()
 
         button = Button(self.format_help_window,
                         text=_('Understood'),
                         command=self._close_format_help_window)
         button.pack()
+
+    def _language_changed(self, *args, **kwargs):
+        language = LangEnum.to_value(self.lang_var.get())
+        settings.set(SettingEnum.LNG, language.value)
+        set_locale(language)
+        for cmp in tuple(self.main_window.children.values()):
+            cmp.destroy()
+        self._initialize()
 
     def _close_result_window(self):
         self.result_window.destroy()
@@ -259,37 +295,27 @@ class UI:
                 target=lambda: _sorting_thread_body(sorter))
             sorting_thread.start()
 
-            # update settings
-            if src_path not in self.settings[SRC_SETTINGS_KEY]:
-                self.settings[SRC_SETTINGS_KEY].insert(0, src_path)
-                self.src_fld.config(values=self._get_src_choices())
+            # update settings and widget values
+            self._save_values_to_settings()
+            self.src_fld.config(values=settings.get(SettingEnum.SRC, ()))
+            self.dst_fld.config(values=settings.get(SettingEnum.DST, ()))
+            self.fmt_fld.config(values=settings.get(SettingEnum.FMT, ()))
 
-            if dst_path not in self.settings[DST_SETTINGS_KEY]:
-                self.settings[DST_SETTINGS_KEY].insert(0, dst_path)
-                self.dst_fld.config(values=self._get_dst_choices())
-
-            if fmt not in self.settings[FMT_SETTINGS_KEY]:
-                self.settings[FMT_SETTINGS_KEY].insert(0, fmt)
-                self.fmt_fld.config(values=self._get_fmt_choices())
-
-            self._save_settings()
-
-    def _save_settings(self):
-        settings_file = open(self.settings_path, 'w')
-        json.dump(self.settings, settings_file)
-        settings_file.close()
-
-    def _get_src_choices(self):
-        return self.settings.setdefault(SRC_SETTINGS_KEY, [])
-
-    def _get_dst_choices(self):
-        return self.settings.setdefault(DST_SETTINGS_KEY, [])
-
-    def _get_fmt_choices(self):
-        return self.settings.setdefault(FMT_SETTINGS_KEY, [])
+    def _save_values_to_settings(self):
+        src_path = self.src_fld.get()
+        if src_path:
+            settings.set(SettingEnum.SRC, src_path)
+        dst_path = self.dst_fld.get()
+        if dst_path:
+            settings.set(SettingEnum.DST, dst_path)
+        fmt = self.fmt_fld.get()
+        if fmt:
+            settings.set(SettingEnum.FMT, fmt)
 
     def _close_main_window(self):
-        self._save_settings()
+        self._save_values_to_settings()
+        settings.save()
+        self.main_window.destroy()
         sys.exit()
 
 
