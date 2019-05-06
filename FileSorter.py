@@ -36,22 +36,33 @@ set_locale(lang)
 class UI:
     def __init__(self):
         self.main_window = Tk()
+        self.main_window.wm_geometry("")
+        self.main_window.wm_resizable(width=False, height=False)
+        self.main_window.protocol("WM_DELETE_WINDOW", self._close_main_window)
+        self._create_variables()
         self._initialize()
+        self._load_settings()
 
     def _initialize(self):
-        self._create_main_window()
+        self._create_widgets()
+        self._assign_a_value_to_variables()
         self._place_widgets()
         self._bind_handlers()
+        self._toggle_widgets_visibility()
 
         # links to additional windows
         self.format_help_window = None
         self.result_window = None
 
-    def _create_main_window(self):
+    def _create_variables(self):
+        self.method_var = StringVar(self.main_window)
+        self.conflict_var = StringVar(self.main_window)
+        self.cleanup_var = IntVar(self.main_window)
+        self.lang_var = StringVar(self.main_window)
+        self.options_var = IntVar(self.main_window)
+
+    def _create_widgets(self):
         self.main_window.title(_('File Sorter'))
-        self.main_window.wm_geometry("")
-        self.main_window.wm_resizable(width=False, height=False)
-        self.main_window.protocol("WM_DELETE_WINDOW", self._close_main_window)
 
         self.src_lbl = Label(self.main_window, text=_('Source folder'),
                              width=LABEL_WIDTH, anchor=E, justify=RIGHT)
@@ -77,11 +88,10 @@ class UI:
         self.fmt_btn = Button(self.main_window,
                               text=_('?'), width=BUTTON_WIDTH)
 
+        self.options_btn = Button(self.main_window, text=_('Options'))
+
         self.method_lbl = Label(self.main_window, text=_('Sorting method'),
                                 width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.method_var = StringVar(
-            self.main_window,
-            SortMethodEnum.to_text(SortMethodEnum.get_default()))
         self.method_fld = OptionMenu(self.main_window,
                                      self.method_var,
                                      *SortMethodEnum.values().values())
@@ -89,10 +99,6 @@ class UI:
         self.conflict_lbl = Label(self.main_window,
                                   text=_('Conflict resolving method'),
                                   width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.conflict_var = StringVar(
-            self.main_window,
-            ConflictResolveMethodEnum.to_text(
-                ConflictResolveMethodEnum.get_default()))
         self.conflict_fld = OptionMenu(
             self.main_window,
             self.conflict_var,
@@ -101,23 +107,13 @@ class UI:
         self.cleanup_lbl = Label(self.main_window,
                                  text=_('Remove empty folders from source'),
                                  width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.cleanup_var = IntVar(self.main_window,
-                                  FolderCleanupOptionsEnum.get_default().value)
         self.cleanup_fld = Checkbutton(
             self.main_window, variable=self.cleanup_var,
             offvalue=FolderCleanupOptionsEnum.LEAVE.value,
             onvalue=FolderCleanupOptionsEnum.REMOVE.value)
 
-        locale_code, encoding = locale.getlocale()
-        try:
-            lang = LangEnum(locale_code)
-        except ValueError:
-            lang = None
         self.lang_lbl = Label(self.main_window, text=_('Language'),
                               width=LABEL_WIDTH, anchor=E, justify=RIGHT)
-        self.lang_var = StringVar(
-            self.main_window,
-            LangEnum.to_text(lang))
         self.lang_fld = OptionMenu(self.main_window,
                                    self.lang_var,
                                    *LangEnum.values().values())
@@ -137,19 +133,21 @@ class UI:
         self.fmt_fld.grid(row=2, column=1, sticky=E + W)
         self.fmt_btn.grid(row=2, column=2)
 
-        self.method_lbl.grid(row=3, column=0)
-        self.method_fld.grid(row=3, column=1, sticky=E + W)
+        self.options_btn.grid(row=3, column=2)
 
-        self.conflict_lbl.grid(row=4, column=0)
-        self.conflict_fld.grid(row=4, column=1, sticky=E + W)
+        self.method_lbl.grid(row=4, column=0)
+        self.method_fld.grid(row=4, column=1, sticky=E + W)
 
-        self.cleanup_lbl.grid(row=5, column=0)
-        self.cleanup_fld.grid(row=5, column=1, sticky=E + W)
+        self.conflict_lbl.grid(row=5, column=0)
+        self.conflict_fld.grid(row=5, column=1, sticky=E + W)
 
-        self.lang_lbl.grid(row=6, column=0)
-        self.lang_fld.grid(row=6, column=1, sticky=E + W)
+        self.cleanup_lbl.grid(row=6, column=0)
+        self.cleanup_fld.grid(row=6, column=1, sticky=E + W)
 
-        self.main_btn.grid(row=7, column=1)
+        self.lang_lbl.grid(row=7, column=0)
+        self.lang_fld.grid(row=7, column=1, sticky=E + W)
+
+        self.main_btn.grid(row=8, column=1)
 
     def _bind_handlers(self):
         self.src_btn.bind(
@@ -166,10 +164,65 @@ class UI:
         self.main_btn.bind(
             '<Button-1>',
             self._sort_button_pressed)
+        self.options_btn.bind(
+            '<Button-1>',
+            self._options_button_pressed)
         self.lang_var.trace("w", self._language_changed)
 
     def run(self):
         mainloop()
+
+    def _assign_a_value_to_variables(self):
+        self.method_var.set(
+            SortMethodEnum.to_text(SortMethodEnum.get_default()))
+
+        self.conflict_var.set(
+            ConflictResolveMethodEnum.to_text(
+                ConflictResolveMethodEnum.get_default()))
+
+        self.cleanup_var.set(FolderCleanupOptionsEnum.get_default().value)
+
+        locale_code, encoding = locale.getlocale()
+        try:
+            lang = LangEnum(locale_code)
+        except ValueError:
+            pass
+        else:
+            self.lang_var.set(LangEnum.to_text(lang))
+
+    def _load_settings(self):
+        self.options_var.set(int(settings.get(
+            SettingEnum.OPTIONS,
+            -1)))
+
+        value = settings.get(SettingEnum.METHOD)
+        if value:
+            self.method_var.set(value)
+
+        value = settings.get(SettingEnum.CONFLICT)
+        if value:
+            self.conflict_var.set(value)
+
+        value = settings.get(SettingEnum.CLEANUP)
+        if value:
+            self.cleanup_var.set(value)
+
+    def _save_settings(self):
+        src_path = self.src_fld.get()
+        if src_path:
+            settings.set(SettingEnum.SRC, src_path)
+        dst_path = self.dst_fld.get()
+        if dst_path:
+            settings.set(SettingEnum.DST, dst_path)
+        fmt = self.fmt_fld.get()
+        if fmt:
+            settings.set(SettingEnum.FMT, fmt)
+
+        settings.set(SettingEnum.OPTIONS, str(self.options_var.get()))
+        settings.set(SettingEnum.METHOD, self.method_var.get())
+        settings.set(SettingEnum.CONFLICT, self.conflict_var.get())
+        settings.set(SettingEnum.CLEANUP, str(self.cleanup_var.get()))
+        settings.save()
 
     def _open_folder_dialog(self, entry, title):
         def _internal(event):
@@ -206,9 +259,12 @@ class UI:
         button.pack()
 
     def _language_changed(self, *args, **kwargs):
+        # changing language
         language = LangEnum.to_value(self.lang_var.get())
         settings.set(SettingEnum.LNG, language.value)
         set_locale(language)
+
+        # rebuilding interface
         for cmp in tuple(self.main_window.children.values()):
             cmp.destroy()
         self._initialize()
@@ -295,26 +351,32 @@ class UI:
                 target=lambda: _sorting_thread_body(sorter))
             sorting_thread.start()
 
-            # update settings and widget values
-            self._save_values_to_settings()
-            self.src_fld.config(values=settings.get(SettingEnum.SRC, ()))
-            self.dst_fld.config(values=settings.get(SettingEnum.DST, ()))
-            self.fmt_fld.config(values=settings.get(SettingEnum.FMT, ()))
+        # update settings and widget values
+        self._save_settings()
+        self.src_fld.config(values=settings.get(SettingEnum.SRC, ()))
+        self.dst_fld.config(values=settings.get(SettingEnum.DST, ()))
+        self.fmt_fld.config(values=settings.get(SettingEnum.FMT, ()))
 
-    def _save_values_to_settings(self):
-        src_path = self.src_fld.get()
-        if src_path:
-            settings.set(SettingEnum.SRC, src_path)
-        dst_path = self.dst_fld.get()
-        if dst_path:
-            settings.set(SettingEnum.DST, dst_path)
-        fmt = self.fmt_fld.get()
-        if fmt:
-            settings.set(SettingEnum.FMT, fmt)
+    def _options_button_pressed(self, event):
+        self.options_var.set(0 - self.options_var.get())
+        self._toggle_widgets_visibility()
+
+    def _toggle_widgets_visibility(self):
+        visible = self.options_var.get() > 0
+        options_widgets = (
+            self.method_lbl, self.method_fld,
+            self.conflict_lbl, self.conflict_fld,
+            self.cleanup_lbl, self.cleanup_fld,
+            self.lang_lbl, self.lang_fld,
+        )
+        for widget in options_widgets:
+            if visible:
+                widget.grid()
+            else:
+                widget.grid_remove()
 
     def _close_main_window(self):
-        self._save_values_to_settings()
-        settings.save()
+        self._save_settings()
         self.main_window.destroy()
         sys.exit()
 

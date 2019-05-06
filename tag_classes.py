@@ -25,17 +25,20 @@ class ContentTypeTag(Tag):
     def help_str():
         return _('Content type name of file (Images, Videos, ...)')
 
-    folder_names = {
-        ContentTypesEnum.IMAGE: _('Images'),
-        ContentTypesEnum.VIDEO: _('Videos'),
-        ContentTypesEnum.AUDIO: _('Audios'),
-        ContentTypesEnum.TEXT: _('Documents'),
-    }
+    @staticmethod
+    def get_folder_names():
+        return {
+            ContentTypesEnum.IMAGE: _('Images'),
+            ContentTypesEnum.VIDEO: _('Videos'),
+            ContentTypesEnum.AUDIO: _('Audios'),
+            ContentTypesEnum.TEXT: _('Documents'),
+        }
 
     @classmethod
     def process(cls, file_obj: File) -> str:
-        if file_obj.content_type in cls.folder_names:
-            result = cls.folder_names[file_obj.content_type]
+        folder_names = cls.get_folder_names()
+        if file_obj.content_type in folder_names:
+            result = folder_names[file_obj.content_type]
         else:
             result = get_default_folder_name()
         return result
@@ -172,11 +175,11 @@ class DayPartTag(DateTimeTag):
 
 
 class CapitalRomanMonthTag(DateTimeTag):
-    tag = '%r'
+    tag = '%R'
 
     @staticmethod
     def help_str():
-        return _("Month as a small roman number [ⅰ,ⅻ]")
+        return _("Month as a capital roman number [Ⅰ,Ⅻ]")
 
     ROMAN_NUMBERS = {
         1: 'Ⅰ', 2: 'Ⅱ', 3: 'Ⅲ', 4: 'Ⅳ',
@@ -190,11 +193,11 @@ class CapitalRomanMonthTag(DateTimeTag):
 
 
 class SmallRomanMonthTag(DateTimeTag):
-    tag = '%R'
+    tag = '%r'
 
     @staticmethod
     def help_str():
-        return _("Month as a capital roman number [Ⅰ,Ⅻ]")
+        return _("Month as a small roman number [ⅰ,ⅻ]")
 
     SMALL_ROMAN_NUMBERS = {
         1: 'ⅰ', 2: 'ⅱ', 3: 'ⅲ', 4: 'ⅳ',
@@ -254,8 +257,9 @@ for x in classes:
 def get_tag_help():
     separator_help = _('''/  - Folder structure separator''')
 
-    example_help = _('''Format example: %T/%Y/%m%B - %d
-    Path example for this format: Images/2017/05May - 02/''')
+    example_help = _(
+        '''Format example: %T/%Y/%m%B - %d
+Path example for this format: Images/2017/05May - 02/''')
 
     return '\n'.join((
         separator_help,

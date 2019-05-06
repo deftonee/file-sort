@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from typing import Text
 
+
 DATE_PATTERN = '%Y:%m:%d %H:%M:%S'
 
 

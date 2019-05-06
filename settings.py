@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from enum import Enum
+from typing import Dict
 
 SETTINGS_FILENAME = 'settings.json'
 
@@ -11,12 +12,17 @@ class SettingEnum(Enum):
     SRC = 'src'
     DST = 'dst'
     FMT = 'fmt'
+    OPTIONS = 'options'
+    METHOD = 'method'
+    CONFLICT = 'conflict'
+    CLEANUP = 'cleanup'
     LNG = 'lng'
 
     @staticmethod
     def list_handler(vault: Dict, key: str, value: str):
         values = vault.setdefault(key, [])
-        values.insert(0, value)
+        if value not in values:
+            values.insert(0, value)
 
     @staticmethod
     def str_handler(vault: Dict, key: str, value: str):
@@ -29,6 +35,10 @@ class SettingEnum(Enum):
             SettingEnum.SRC: SettingEnum.list_handler,
             SettingEnum.DST: SettingEnum.list_handler,
             SettingEnum.FMT: SettingEnum.list_handler,
+            SettingEnum.OPTIONS: SettingEnum.str_handler,
+            SettingEnum.METHOD: SettingEnum.str_handler,
+            SettingEnum.CONFLICT: SettingEnum.str_handler,
+            SettingEnum.CLEANUP: SettingEnum.str_handler,
             SettingEnum.LNG: SettingEnum.str_handler,
         }
 
