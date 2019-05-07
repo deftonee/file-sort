@@ -1,6 +1,6 @@
 #### File (mostly picture) sorting script / UI application
 
-Runs on macOS, Linux, Windows. Python 3.6+ needed.
+Runs on macOS, Linux, Windows. Python 3.7 needed.
 
 To run sources on Linux:
 ```
