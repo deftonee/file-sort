@@ -20,15 +20,15 @@ virtualenv -p python3 .virtualenv
 
 ```
 # TODO list:
-    - make language select possibility for cli        
     - do visual path format constructing maybe
     - make an app for windows, macOS, linux. make instructions
     - make instructions to run on windows
     - make option for considering hidden files
-    - make option about what date to consider when sorting: 
+    - make option about what date to consider when sorting:
         file created, photo shot
     - more information in process output logs for user. maybe not
     - do something with TODOs in code
     - write some tests maybe
+    - do not clear the fields when changing the language
 ```
 Icon made by Creaticca Creative Agency from www.flaticon.com is licensed by CC 3.0 BY

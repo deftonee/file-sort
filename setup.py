@@ -7,7 +7,7 @@ Usage:
 
 from setuptools import setup
 
-APP = ['FileSorter.py']
+APP = ['file_sort/ui.py']
 DATA_FILES = [('', ['locale'])]
 OPTIONS = {'iconfile': './pic.icns'}
 

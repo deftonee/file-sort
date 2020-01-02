@@ -33,7 +33,80 @@ if lang:
 set_locale(lang)
 
 
-class UI:
+class MyWindow:
+    name: str = ''
+
+    def launch(self):
+        if self.is_launched:
+            return
+        self._window = Toplevel(self.master)
+        self._window.title(self.name)
+        self._window.wm_geometry("")
+        self._window.protocol("WM_DELETE_WINDOW", self._close_handler)
+        self._add_widgets()
+
+    @property
+    def is_launched(self) -> bool:
+        return bool(self._window)
+
+    def close(self):
+        self._close_handler()
+
+    def __init__(self, master):
+        self._window = None
+        self.master = master
+
+    def _add_widgets(self):
+        pass
+
+    def _close_handler(self):
+        if self._window:
+            self._window.destroy()
+            self._window = None
+
+
+class FormatHelpWindow(MyWindow):
+    name = _('Format help')
+
+    def _add_widgets(self):
+        msg = Message(self._window, text=get_tag_help())
+        msg.pack()
+        button = Button(self._window, text=_('Understood'), command=self._close_handler)
+        button.pack()
+
+
+class ResultWindow(MyWindow):
+    name = _('Sorting process')
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.total = 0
+        self.result_pgb = None
+        self.done_lst = None
+        self.failed_lst = None
+
+    def _add_widgets(self):
+        self.result_pgb = Progressbar(
+            self._window, orient="horizontal",
+            length=PROGRESSBAR_LENGTH, mode="determinate")
+        self.result_pgb.config(maximum=self.total)
+        self.result_pgb.config(value=0)
+
+        tabs = Notebook(self._window)
+        done_frame = Frame(tabs)
+        fails_frame = Frame(tabs)
+        tabs.add(done_frame, text=_('Done'))
+        tabs.add(fails_frame, text=_('Fails'))
+        self.done_lst = ScrolledText(done_frame)
+        self.failed_lst = ScrolledText(fails_frame)
+
+        self.result_pgb.pack(fill=X)
+        tabs.pack(fill=BOTH)
+        self.done_lst.pack(fill=BOTH)
+        self.failed_lst.pack(fill=BOTH)
+
+
+class MyUI:
     def __init__(self):
         self.main_window = Tk()
         self.main_window.wm_geometry("")
@@ -50,9 +123,9 @@ class UI:
         self._bind_handlers()
         self._toggle_widgets_visibility()
 
-        # links to additional windows
-        self.format_help_window = None
-        self.result_window = None
+        # additional windows
+        self.format_help_window = FormatHelpWindow(self.main_window)
+        self.result_window = ResultWindow(self.main_window)
 
     def _create_variables(self):
         self.method_var = StringVar(self.main_window)
@@ -160,7 +233,7 @@ class UI:
                 self.dst_fld, _('Select destination folder of your files')))
         self.fmt_btn.bind(
             '<Button-1>',
-            self._show_format_help)
+            self.format_help_window.launch)
         self.main_btn.bind(
             '<Button-1>',
             self._sort_button_pressed)
@@ -232,32 +305,6 @@ class UI:
 
         return _internal
 
-    def _close_format_help_window(self):
-        self.format_help_window.destroy()
-        self.format_help_window = None
-
-    def _show_format_help(self, event):
-
-        if self.format_help_window is not None:
-            return
-
-        self.format_help_window = Toplevel()
-        self.format_help_window.title(_('Format help'))
-        self.format_help_window.wm_geometry("")
-        self.format_help_window.wm_resizable(width=False, height=False)
-        self.format_help_window.protocol("WM_DELETE_WINDOW",
-                                         self._close_format_help_window)
-
-        msg = Message(
-            self.format_help_window,
-            text=get_tag_help())
-        msg.pack()
-
-        button = Button(self.format_help_window,
-                        text=_('Understood'),
-                        command=self._close_format_help_window)
-        button.pack()
-
     def _language_changed(self, *args, **kwargs):
         # changing language
         language = LangEnum.to_value(self.lang_var.get())
@@ -269,10 +316,6 @@ class UI:
             cmp.destroy()
         self._initialize()
 
-    def _close_result_window(self):
-        self.result_window.destroy()
-        self.result_window = None
-
     def _sort_button_pressed(self, event):
 
         sm = SortMethodEnum.to_value(self.method_var.get())
@@ -282,11 +325,11 @@ class UI:
         def _sorting_thread_body(sorter):
             for is_done, file_name in sorter.sort():
                 try:
-                    result_pgb.step(1)
+                    self.result_window.result_pgb.step(1)
                     if is_done:
-                        done_lst.insert(END, '%s\n' % file_name)
+                        self.result_window.done_lst.insert(END, '%s\n' % file_name)
                     else:
-                        failed_lst.insert(END, '%s\n' % file_name)
+                        self.result_window.failed_lst.insert(END, '%s\n' % file_name)
                 except TclError:
                     messagebox.showinfo(
                         title=_('Information'),
@@ -294,13 +337,13 @@ class UI:
                     )
                     return
 
-            result_pgb.config(value=total)
+            self.result_window.result_pgb.config(value=total)
             messagebox.showinfo(
                 title=_('Success'),
                 message=_('Sort process completed'),
             )
 
-        if self.result_window is not None:
+        if self.result_window.is_launched:
             return
 
         src_path = self.src_fld.get()
@@ -318,34 +361,11 @@ class UI:
         else:
             # FIXME in some cases counts in wrong way
             total = 0
-            for x in os.walk(src_path):
-                total += len(x[2])
+            for top, dirs, non_dirs in os.walk(src_path):
+                total += len(non_dirs)
 
-            self.result_window = Toplevel()
-            self.result_window.title(_('Sorting process'))
-            self.result_window.wm_geometry("")
-            self.result_window.protocol("WM_DELETE_WINDOW",
-                                        self._close_result_window)
-
-            result_pgb = Progressbar(
-                self.result_window, orient="horizontal",
-                length=PROGRESSBAR_LENGTH, mode="determinate")
-            result_pgb.config(maximum=total)
-            result_pgb.config(value=0)
-
-            tabs = Notebook(self.result_window)
-            done_frame = Frame(tabs)
-            fails_frame = Frame(tabs)
-            tabs.add(done_frame, text=_('Done'))
-            tabs.add(fails_frame, text=_('Fails'))
-            done_lst = ScrolledText(done_frame)
-            failed_lst = ScrolledText(fails_frame)
-
-            result_pgb.pack(fill=X)
-            tabs.pack(fill=BOTH)
-            done_lst.pack(fill=BOTH)
-            failed_lst.pack(fill=BOTH)
-
+            self.result_window.total = total
+            self.result_window.launch()
             # start sorting
             sorting_thread = threading.Thread(
                 target=lambda: _sorting_thread_body(sorter))
@@ -377,9 +397,12 @@ class UI:
 
     def _close_main_window(self):
         self._save_settings()
+        self.result_window.close()
+        self.format_help_window.close()
         self.main_window.destroy()
         sys.exit()
 
 
-ui = UI()
-ui.run()
+if __name__ == '__main__':
+    ui = MyUI()
+    ui.run()
