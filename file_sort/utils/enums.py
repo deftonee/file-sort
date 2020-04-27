@@ -2,30 +2,29 @@ from __future__ import annotations
 
 import os
 import shutil
-
 from enum import Enum
 from gettext import gettext as _
-from typing import Dict, Callable
+from typing import Callable, Dict
 
-from file_classes import ImageFile, File
+from .file_classes import File, ImageFile
 
 
 class MyEnum(Enum):
 
     @classmethod
-    def values(cls) -> Dict[Enum, str]:
+    def values(cls) -> Dict[MyEnum, str]:
         raise NotImplemented()
 
     @classmethod
-    def get_default(cls) -> Enum:
+    def get_default(cls) -> MyEnum:
         raise NotImplemented()
 
     @classmethod
-    def to_text(cls, value: Enum) -> str:
+    def to_text(cls, value: MyEnum) -> str:
         return cls.values().get(value, '')
 
     @classmethod
-    def to_value(cls, text: str) -> Enum:
+    def to_value(cls, text: str) -> MyEnum:
         return next(
             (k for k, v in cls.values().items() if v == text),
             cls.get_default())
@@ -33,7 +32,7 @@ class MyEnum(Enum):
 
 class EnumWithAction(MyEnum):
     @classmethod
-    def handlers(cls) -> Dict[Enum, Callable]:
+    def handlers(cls) -> Dict[MyEnum, Callable]:
         raise NotImplemented()
 
 
@@ -43,18 +42,18 @@ class SortMethodEnum(EnumWithAction):
     MOVE = 2
 
     @classmethod
-    def values(cls) -> Dict[SortMethodEnum, str]:
+    def values(cls) -> Dict[MyEnum, str]:
         return {
             SortMethodEnum.COPY: _('Copy'),
             SortMethodEnum.MOVE: _('Move'),
         }
 
     @classmethod
-    def get_default(cls) -> SortMethodEnum:
+    def get_default(cls) -> MyEnum:
         return SortMethodEnum.COPY
 
     @classmethod
-    def handlers(cls) -> Dict[SortMethodEnum, Callable]:
+    def handlers(cls) -> Dict[MyEnum, Callable]:
         return {
             SortMethodEnum.COPY: cls.copy_handler,
             SortMethodEnum.MOVE: cls.move_handler,
@@ -76,7 +75,7 @@ class ConflictResolveMethodEnum(EnumWithAction):
     DO_NOTHING = 3
 
     @classmethod
-    def values(cls) -> Dict[ConflictResolveMethodEnum, str]:
+    def values(cls) -> Dict[MyEnum, str]:
         return {
             ConflictResolveMethodEnum.REPLACE:
                 _('Replace'),
@@ -87,11 +86,11 @@ class ConflictResolveMethodEnum(EnumWithAction):
         }
 
     @classmethod
-    def get_default(cls) -> ConflictResolveMethodEnum:
+    def get_default(cls) -> MyEnum:
         return ConflictResolveMethodEnum.SAVE_ALL
 
     @classmethod
-    def handlers(cls) -> Dict[ConflictResolveMethodEnum, Callable]:
+    def handlers(cls) -> Dict[MyEnum, Callable]:
         return {
             ConflictResolveMethodEnum.REPLACE: cls.replace_handler,
             ConflictResolveMethodEnum.SAVE_ALL: cls.save_all_handler,
@@ -135,21 +134,21 @@ class FolderCleanupOptionsEnum(EnumWithAction):
     LEAVE = 2
 
     @classmethod
-    def values(cls) -> Dict[FolderCleanupOptionsEnum, str]:
+    def values(cls) -> Dict[MyEnum, str]:
         return {
             FolderCleanupOptionsEnum.REMOVE: _('Remove'),
             FolderCleanupOptionsEnum.LEAVE: _('Leave'),
         }
 
     @classmethod
-    def get_default(cls) -> FolderCleanupOptionsEnum:
+    def get_default(cls) -> MyEnum:
         return FolderCleanupOptionsEnum.REMOVE
 
     @classmethod
-    def handlers(cls) -> Dict[FolderCleanupOptionsEnum, Callable]:
+    def handlers(cls) -> Dict[MyEnum, Callable]:
         return {
             FolderCleanupOptionsEnum.REMOVE: cls.remove_handler,
-            FolderCleanupOptionsEnum.LEAVE: lambda _cls: None,
+            FolderCleanupOptionsEnum.LEAVE: lambda *args, **kwargs: None,
         }
 
     @classmethod
@@ -165,14 +164,14 @@ class HiddenOptionEnum(EnumWithAction):
     NO = 2
 
     @classmethod
-    def values(cls) -> Dict[HiddenOptionEnum, str]:
+    def values(cls) -> Dict[MyEnum, str]:
         return {
             HiddenOptionEnum.YES: _('Process hidden objects'),
             HiddenOptionEnum.NO: _('Not process hidden objects'),
         }
 
     @classmethod
-    def get_default(cls) -> HiddenOptionEnum:
+    def get_default(cls) -> MyEnum:
         return HiddenOptionEnum.YES
 
 
@@ -199,7 +198,7 @@ class ContentTypesEnum(MyEnum):
         return classes.get(value, File)
 
     @classmethod
-    def get_default(cls) -> ContentTypesEnum:
+    def get_default(cls) -> MyEnum:
         return ContentTypesEnum.UNKNOWN
 
 
@@ -208,14 +207,14 @@ class LangEnum(MyEnum):
     RU = 'ru_RU'
 
     @classmethod
-    def values(cls) -> Dict[LangEnum, str]:
+    def values(cls) -> Dict[MyEnum, str]:
         return {
             LangEnum.EN: 'English',
             LangEnum.RU: 'Русский',
         }
 
     @classmethod
-    def get_default(cls) -> LangEnum:
+    def get_default(cls) -> MyEnum:
         return LangEnum.EN
 
     @classmethod

@@ -2,22 +2,33 @@ import logging
 import os
 import re
 import traceback
-
-from typing import Tuple, Iterator, Text, List, Set
 from gettext import gettext as _
+from typing import Iterator, List, Optional, Set, Text, Tuple
 
-from enums import (
-    SortMethodEnum, FolderCleanupOptionsEnum, ContentTypesEnum,
-    ConflictResolveMethodEnum)
-from helpers import TagProcessor
+from .enums import (
+    ConflictResolveMethodEnum,
+    ContentTypesEnum,
+    FolderCleanupOptionsEnum,
+    MyEnum,
+    SortMethodEnum
+)
+from .tag_classes import TagProcessor
+
+logger = logging.getLogger(__name__)
 
 
 try:
-    import magic
+    import magic  # type: ignore
 except ImportError:
+    logger.warning('libmagic isn`t installed')
     magic = None
 
-logging.basicConfig(filename="log.log", level=logging.INFO)
+logging.basicConfig(
+    filename="../log.log",
+    level=logging.INFO,
+    format='[%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s]: %(message)s',
+)
+
 
 # constants
 PATH_DELIMITER = '/'
@@ -26,9 +37,9 @@ TAG_PATTERN = '%[a-zA-Z]'
 
 class Sorter:
     def __init__(self, src_path: str, dst_path: str, path_format: str,
-                 method: SortMethodEnum,
-                 conflict_resolve_method: ConflictResolveMethodEnum,
-                 cleanup_option: FolderCleanupOptionsEnum):
+                 method: MyEnum,
+                 conflict_resolve_method: MyEnum,
+                 cleanup_option: MyEnum):
         self.src_path = src_path
         self.dst_path = dst_path
         self.method = method
@@ -66,7 +77,7 @@ class Sorter:
                 try:
                     self._process_file(current_path)
                 except Exception as e:  # TODO specify kinds of error
-                    logging.error(traceback.format_exc())
+                    logger.error(traceback.format_exc())
                     yield False, current_path
                 else:
                     yield True, current_path
@@ -77,14 +88,13 @@ class Sorter:
     def _process_file(self, file_path: str) -> None:
         """ Process file """
         # defining type of file
+        file_type: Optional[MyEnum] = None
         if magic is not None:
             mime_info = magic.from_file(file_path, mime=True) or ''
             try:
                 file_type = ContentTypesEnum(mime_info.split('/')[0])
             except ValueError:
                 file_type = ContentTypesEnum.get_default()
-        else:
-            file_type = ''
         cls = ContentTypesEnum.get_class(file_type)
         file_obj = cls(file_path, file_type)
 

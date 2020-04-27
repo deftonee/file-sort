@@ -1,13 +1,15 @@
 import argparse
 import os
 import sys
-
 from gettext import gettext as _
 
-from enums import (
-    SortMethodEnum, ConflictResolveMethodEnum, FolderCleanupOptionsEnum)
-from main import Sorter
-from tag_classes import get_tag_help
+from file_sort.utils.enums import (
+    ConflictResolveMethodEnum,
+    FolderCleanupOptionsEnum,
+    SortMethodEnum
+)
+from file_sort.utils.main import Sorter
+from file_sort.utils.tag_classes import get_tag_help
 
 # progress bar constants
 PGB_WIDTH = 40

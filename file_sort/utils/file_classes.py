@@ -1,9 +1,8 @@
-import exifread
 import os
-
 from datetime import datetime
 from typing import Text
 
+import exifread  # type: ignore
 
 DATE_PATTERN = '%Y:%m:%d %H:%M:%S'
 

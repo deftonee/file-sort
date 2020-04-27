@@ -1,22 +1,26 @@
 import locale
 import os
 import threading
-
 from gettext import gettext as _
 from tkinter import *
-from tkinter import filedialog
-from tkinter import messagebox
-from tkinter.scrolledtext import ScrolledText
+from tkinter import filedialog, messagebox
+from tkinter.scrolledtext import ScrolledText  # type: ignore
 from tkinter.ttk import Combobox, Notebook, Progressbar
 
-from enums import (
-    ConflictResolveMethodEnum, FolderCleanupOptionsEnum, SortMethodEnum,
-    LangEnum)
-from helpers import set_locale
-from main import Sorter
-from settings import Settings, SettingEnum
-from tag_classes import get_tag_help
-
+from file_sort.utils.enums import (
+    ConflictResolveMethodEnum,
+    FolderCleanupOptionsEnum,
+    LangEnum,
+    SortMethodEnum
+)
+from file_sort.utils.helpers import (
+    load_var_from_enum_to_settings,
+    save_var_from_enum_to_settings,
+    set_locale
+)
+from file_sort.utils.main import Sorter
+from file_sort.utils.settings import SettingEnum, Settings
+from file_sort.utils.tag_classes import get_tag_help
 
 LABEL_WIDTH = 25
 FIELD_WIDTH = 25
@@ -24,7 +28,7 @@ BUTTON_WIDTH = 5
 PROGRESSBAR_LENGTH = 200
 
 
-settings = Settings(os.path.dirname(__file__))
+settings = Settings()
 
 # set language
 lang = settings.get(SettingEnum.LNG)
@@ -43,7 +47,7 @@ class MyWindow:
         self._window.title(self.name)
         self._window.wm_geometry("")
         self._window.protocol("WM_DELETE_WINDOW", self._close_handler)
-        self._add_widgets()
+        self._after_launch()
 
     @property
     def is_launched(self) -> bool:
@@ -56,7 +60,7 @@ class MyWindow:
         self._window = None
         self.master = master
 
-    def _add_widgets(self):
+    def _after_launch(self):
         pass
 
     def _close_handler(self):
@@ -66,9 +70,9 @@ class MyWindow:
 
 
 class FormatHelpWindow(MyWindow):
-    name = _('Format help')
+    name = _('Path format help')
 
-    def _add_widgets(self):
+    def _after_launch(self):
         msg = Message(self._window, text=get_tag_help())
         msg.pack()
         button = Button(self._window, text=_('Understood'), command=self._close_handler)
@@ -85,7 +89,7 @@ class ResultWindow(MyWindow):
         self.done_lst = None
         self.failed_lst = None
 
-    def _add_widgets(self):
+    def _after_launch(self):
         self.result_pgb = Progressbar(
             self._window, orient="horizontal",
             length=PROGRESSBAR_LENGTH, mode="determinate")
@@ -113,19 +117,26 @@ class MyUI:
         self.main_window.wm_resizable(width=False, height=False)
         self.main_window.protocol("WM_DELETE_WINDOW", self._close_main_window)
         self._create_variables()
-        self._initialize()
+        self._assign_a_value_to_variables()
         self._load_settings()
+        self._initialize()
+
+    def run(self):
+        mainloop()
 
     def _initialize(self):
+        for cmp in tuple(self.main_window.children.values()):
+            cmp.destroy()
+
         self._create_widgets()
-        self._assign_a_value_to_variables()
-        self._place_widgets()
-        self._bind_handlers()
-        self._toggle_widgets_visibility()
 
         # additional windows
         self.format_help_window = FormatHelpWindow(self.main_window)
         self.result_window = ResultWindow(self.main_window)
+
+        self._place_widgets()
+        self._bind_handlers()
+        self._toggle_widgets_visibility()
 
     def _create_variables(self):
         self.method_var = StringVar(self.main_window)
@@ -225,25 +236,28 @@ class MyUI:
     def _bind_handlers(self):
         self.src_btn.bind(
             '<Button-1>',
-            self._open_folder_dialog(
-                self.src_fld, _('Select source folder of your files')))
+            self._open_folder_dialog(self.src_fld, _('Select source folder of your files')),
+        )
         self.dst_btn.bind(
             '<Button-1>',
-            self._open_folder_dialog(
-                self.dst_fld, _('Select destination folder of your files')))
+            self._open_folder_dialog(self.dst_fld, _('Select destination folder of your files')),
+        )
         self.fmt_btn.bind(
             '<Button-1>',
-            self.format_help_window.launch)
+            self._launch_something,
+        )
         self.main_btn.bind(
             '<Button-1>',
-            self._sort_button_pressed)
+            self._sort_button_pressed,
+        )
         self.options_btn.bind(
             '<Button-1>',
-            self._options_button_pressed)
+            self._options_button_pressed,
+        )
         self.lang_var.trace("w", self._language_changed)
 
-    def run(self):
-        mainloop()
+    def _launch_something(self, event):
+        self.format_help_window.launch()
 
     def _assign_a_value_to_variables(self):
         self.method_var.set(
@@ -266,15 +280,15 @@ class MyUI:
     def _load_settings(self):
         self.options_var.set(int(settings.get(
             SettingEnum.OPTIONS,
-            -1)))
+            -1,
+        )))
 
-        value = settings.get(SettingEnum.METHOD)
-        if value:
-            self.method_var.set(value)
-
-        value = settings.get(SettingEnum.CONFLICT)
-        if value:
-            self.conflict_var.set(value)
+        load_var_from_enum_to_settings(
+            SortMethodEnum, SettingEnum.METHOD, self.method_var,
+        )
+        load_var_from_enum_to_settings(
+            ConflictResolveMethodEnum, SettingEnum.CONFLICT, self.conflict_var,
+        )
 
         value = settings.get(SettingEnum.CLEANUP)
         if value:
@@ -292,9 +306,14 @@ class MyUI:
             settings.set(SettingEnum.FMT, fmt)
 
         settings.set(SettingEnum.OPTIONS, str(self.options_var.get()))
-        settings.set(SettingEnum.METHOD, self.method_var.get())
-        settings.set(SettingEnum.CONFLICT, self.conflict_var.get())
+        save_var_from_enum_to_settings(
+            SortMethodEnum, SettingEnum.METHOD, self.method_var,
+        )
+        save_var_from_enum_to_settings(
+            ConflictResolveMethodEnum, SettingEnum.CONFLICT, self.conflict_var,
+        )
         settings.set(SettingEnum.CLEANUP, str(self.cleanup_var.get()))
+
         settings.save()
 
     def _open_folder_dialog(self, entry, title):
@@ -306,14 +325,17 @@ class MyUI:
         return _internal
 
     def _language_changed(self, *args, **kwargs):
+
+        save_var_from_enum_to_settings(LangEnum, SettingEnum.LNG, self.lang_var)
+        self._save_settings()
+
         # changing language
         language = LangEnum.to_value(self.lang_var.get())
-        settings.set(SettingEnum.LNG, language.value)
         set_locale(language)
 
+        self._load_settings()
+
         # rebuilding interface
-        for cmp in tuple(self.main_window.children.values()):
-            cmp.destroy()
         self._initialize()
 
     def _sort_button_pressed(self, event):
@@ -359,7 +381,7 @@ class MyUI:
                 message=msg,
             )
         else:
-            # FIXME in some cases counts in wrong way
+            # FIXME in some cases counts incorrectly
             total = 0
             for top, dirs, non_dirs in os.walk(src_path):
                 total += len(non_dirs)
@@ -378,7 +400,7 @@ class MyUI:
         self.fmt_fld.config(values=settings.get(SettingEnum.FMT, ()))
 
     def _options_button_pressed(self, event):
-        self.options_var.set(0 - self.options_var.get())
+        self.options_var.set(-self.options_var.get())
         self._toggle_widgets_visibility()
 
     def _toggle_widgets_visibility(self):

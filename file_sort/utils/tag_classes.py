@@ -1,8 +1,9 @@
 from gettext import gettext as _
+from typing import Dict, Set, Text, Type
 
-from enums import ContentTypesEnum
-from file_classes import File
-from helpers import TagProcessor, get_default_folder_name
+from .enums import ContentTypesEnum
+from .file_classes import File
+from .helpers import get_default_folder_name
 
 
 class Tag:
@@ -249,6 +250,30 @@ classes = (
     SmallRomanMonthTag,
     NumberInCircleMonthTag,
 )
+
+
+class TagProcessor:
+    """ Class transforms string with tags into folder name """
+    tag_classes: Dict[str, Type[Tag]] = {}
+
+    # TODO move here all path logic from main class
+    @classmethod
+    def process_string(
+            cls, file_obj: File, string: Text, tags: Set[Text]) -> Text:
+        result = string
+        for tag in tags:
+            if tag in cls.tag_classes:
+                replacement = cls.tag_classes[tag].process(file_obj)
+                result = result.replace(tag, replacement)
+            else:
+                result = get_default_folder_name()
+                break
+        return result
+
+    @classmethod
+    def add_tag_class(cls, tag_cls: Type[Tag]):
+        cls.tag_classes[tag_cls.tag] = tag_cls
+
 
 for x in classes:
     TagProcessor.add_tag_class(x)

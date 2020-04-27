@@ -21,7 +21,7 @@ virtualenv -p python3 .virtualenv
 ```
 # TODO list:
     - do visual path format constructing maybe
-    - make an app for windows, macOS, linux. make instructions
+    - make an app for windows, macOS, linux. make instructions?
     - make instructions to run on windows
     - make option for considering hidden files
     - make option about what date to consider when sorting:
@@ -30,5 +30,6 @@ virtualenv -p python3 .virtualenv
     - do something with TODOs in code
     - write some tests maybe
     - do not clear the fields when changing the language
+    - add docker
 ```
 Icon made by Creaticca Creative Agency from www.flaticon.com is licensed by CC 3.0 BY

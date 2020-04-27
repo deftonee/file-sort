@@ -17,8 +17,8 @@ msgstr ""
 "X-Generator: Loco https://localise.biz/"
 
 #: Users/konstantin/projects/fileSort/FileSorter.py:67
-msgid "Format help"
-msgstr "Помощь"
+msgid "Path format help"
+msgstr "Справка по формату пути"
 
 #: Users/konstantin/projects/fileSort/FileSorter.py:78
 msgid "Understood"
@@ -109,6 +109,10 @@ msgstr "Выберите папку с файлами"
 #: Users/konstantin/projects/fileSort/FileSorter.py:273
 msgid "Select destination folder of your files"
 msgstr "Выберите конечную папку"
+
+#: Users/konstantin/projects/fileSort/FileSorter.py:276
+msgid "Options"
+msgstr "Настройки"
 
 #: Users/konstantin/projects/fileSort/cli.py:28
 msgid "Move files instead of copying them"
