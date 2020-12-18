@@ -26,6 +26,7 @@ virtualenv -p python3 .virtualenv
     - make option for considering hidden files
     - make option about what date to consider when sorting:
         file created, photo shot
+    - add filter for files that needed to be sorted
     - more information in process output logs for user. maybe not
     - do something with TODOs in code
     - write some tests maybe
@@ -33,3 +34,4 @@ virtualenv -p python3 .virtualenv
     - add docker
 ```
 Icon made by Creaticca Creative Agency from www.flaticon.com is licensed by CC 3.0 BY
+dsojfois;djf;j;
