@@ -13,4 +13,4 @@ python-magic==0.4.15
 # altgraph==0.16.1
 
 # on windows
-pyinstaller==3.6
+pyinstaller==6.15.0
